@@ -320,6 +320,9 @@ export default function App() {
               <button type="button" className={`lang-btn ${lang === 'en' ? 'lang-btn-active' : ''}`} onClick={() => setLang('en')}>EN</button>
             </div>
           </div>
+          <div className="brand-row">
+            <img src={`${import.meta.env.BASE_URL}logo_clean.png`} alt="SB" className="brand-logo" />
+          </div>
         </div>
 
         <div className="frame">

@@ -21,7 +21,7 @@ body {
 }
 
 .page {
-  width: min(1420px, calc(100vw - 32px));
+  width: min(1480px, calc(100vw - 32px));
   margin: 10px auto 20px;
 }
 
@@ -63,6 +63,19 @@ body {
 .lang-btn-active {
   border-color: rgba(255, 209, 102, 0.55);
   color: #ffd166;
+}
+
+.brand-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.brand-logo {
+  width: 58px;
+  height: auto;
+  opacity: 0.96;
+  filter: brightness(0) invert(1);
 }
 
 .section-kicker {
