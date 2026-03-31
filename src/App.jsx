@@ -250,16 +250,17 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [lang, setLang] = useState('en');
   const [animationKey, setAnimationKey] = useState(0);
+  const dataUrl = `${import.meta.env.BASE_URL}data/oil-history.json`;
 
   useEffect(() => {
-    fetch('/data/oil-history.json')
+    fetch(dataUrl)
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
       .then(setData)
       .catch((err) => setError(err.message));
-  }, []);
+  }, [dataUrl]);
 
   useEffect(() => {
     if (!data) return undefined;
