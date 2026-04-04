@@ -26,19 +26,41 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: g1/package-lock.json
+          cache-dependency-path: |
+            g1/package-lock.json
+            g2/package-lock.json
 
       - name: Install dependencies
         working-directory: ./g1
+        run: npm ci
+
+      - name: Install dependencies (g2)
+        working-directory: ./g2
         run: npm ci
 
       - name: Build data
         working-directory: ./g1
         run: npm run build:data
 
+      - name: Build data (g2)
+        working-directory: ./g2
+        run: npm run build:data
+
       - name: Build app
         working-directory: ./g1
         run: npm run build
+
+      - name: Build app (g2)
+        working-directory: ./g2
+        run: npm run build
+
+      - name: Assemble site
+        run: |
+          rm -rf site
+          mkdir -p site/g1 site/g2
+          cp index.html site/index.html
+          cp -R g1/dist/. site/g1/
+          cp -R g2/dist/. site/g2/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -46,7 +68,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./g1/dist
+          path: ./site
 
   deploy:
     environment:

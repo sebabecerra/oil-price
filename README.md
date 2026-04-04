@@ -1,14 +1,19 @@
 # Historical Real Oil Price
 
-Single-purpose app that reconstructs and displays a long-run real crude oil price series through 2026.
+Repository for multiple oil-chart apps that share the same visual language and deploy together to GitHub Pages.
 
-The app now lives under `g1/`, where `g1` means graph 1. The repository root stays reserved for shared repo-level files such as GitHub Pages workflow, git config and future graph folders.
+Structure:
+
+- `g1/`: historical real oil price chart
+- `g2/`: one-line-per-year WTI chart
+
+The repository root stays reserved for shared repo-level files such as the GitHub Pages workflow, the root index page, git config and future graph folders.
 
 ## Commands
 
-Run these from `g1/`:
+Run these from the graph folder you want:
 
-- `cd g1`
+- `cd g1` or `cd g2`
 - `npm install`
 - `npm run build:data`
 - `npm run dev`
@@ -16,8 +21,17 @@ Run these from `g1/`:
 
 ## Data logic
 
+### G1
+
 1. Use OWID real oil prices through 2024.
 2. Use FRED WTI spot prices to extend 2025 and 2026.
 3. Deflate recent nominal prices into constant 2024 dollars with CPI.
 4. Link the recent segment to the OWID 2024 level.
 5. Convert the final series into `$2014/bbl`.
+
+### G2
+
+1. Fetch daily `CL=F` history from Yahoo Finance.
+2. Split the series by calendar year.
+3. Normalize each year to its first trading day.
+4. Render one line per year with the current year highlighted.

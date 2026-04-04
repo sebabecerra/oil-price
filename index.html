@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historical Oil Charts</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #000;
+        color: #f2f2f2;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #000; }
+      main {
+        width: min(980px, calc(100vw - 32px));
+        margin: 24px auto;
+        padding: 20px;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px;
+        background: #050505;
+      }
+      h1 {
+        margin: 0 0 8px;
+        color: #ffd166;
+        font-size: 34px;
+        line-height: 1;
+      }
+      p {
+        margin: 0 0 18px;
+        color: rgba(220,220,220,0.72);
+        line-height: 1.5;
+      }
+      .links {
+        display: grid;
+        gap: 12px;
+      }
+      a {
+        display: block;
+        padding: 14px 16px;
+        border: 1px solid rgba(255, 209, 102, 0.24);
+        border-radius: 8px;
+        background: rgba(255, 209, 102, 0.06);
+        color: #ffd166;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      small {
+        display: block;
+        margin-top: 6px;
+        color: rgba(255,255,255,0.7);
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Historical Oil Charts</h1>
+      <p>Repository index for the GitHub Pages versions of the oil chart projects.</p>
+      <div class="links">
+        <a href="./g1/">
+          G1 · Historical real oil price
+          <small>Long-run reconstructed real oil price series through 2026.</small>
+        </a>
+        <a href="./g2/">
+          G2 · One line per year
+          <small>WTI YTD chart with one line per year in the same visual format.</small>
+        </a>
+      </div>
+    </main>
+  </body>
+  </html>

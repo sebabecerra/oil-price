@@ -5,9 +5,9 @@ const isGithubActions = process.env.GITHUB_ACTIONS === "true";
 const repoName = "historical-real-oil-price";
 
 export default defineConfig({
-  base: isGithubActions ? `/${repoName}/g1/` : "/",
+  base: isGithubActions ? `/${repoName}/g2/` : "/",
   plugins: [react()],
   server: {
-    port: 5174,
+    port: 5175,
   },
 });
