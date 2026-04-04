@@ -5,9 +5,9 @@ const ACCENT = "#ffd166";
 
 const UI_TEXT = {
   en: {
-    heading: "Oil 2026: the most aggressive rally in 30 years",
+    heading: "Oil 2026: the most aggressive rally in years",
     subtitle:
-      "Brent Crude year-to-date price change for each year since 1996",
+      "Brent Crude year-to-date price change for each year since 1987",
     noteLabel: "Note:",
     sourceLabel: "Source:",
     reloadLabel: "Reload",
@@ -23,13 +23,16 @@ const UI_TEXT = {
     pctAxis: "YTD change (%)",
     valueLabel: "Value",
     changeLabel: "YTD",
+    asOfLabel: "As of",
+    minLabel: "Min",
+    maxLabel: "Max",
     loading: "Loading chart…",
     error: "Could not load data:",
   },
   es: {
-    heading: "Petróleo 2026: el rally más agresivo en 30 años",
+    heading: "Petróleo 2026: el rally más agresivo en años",
     subtitle:
-      "Cambio acumulado en el año del precio del Brent para cada año desde 1996",
+      "Cambio acumulado en el año del precio del Brent para cada año desde 1987",
     noteLabel: "Nota:",
     sourceLabel: "Fuente:",
     reloadLabel: "Recargar",
@@ -45,6 +48,9 @@ const UI_TEXT = {
     pctAxis: "Cambio YTD (%)",
     valueLabel: "Valor",
     changeLabel: "YTD",
+    asOfLabel: "Al",
+    minLabel: "Minimo",
+    maxLabel: "Maximo",
     loading: "Cargando gráfico…",
     error: "No se pudieron cargar los datos:",
   },
@@ -80,7 +86,7 @@ function formatPct(value) {
 
 function formatDate(date, locale) {
   return new Date(`${date}T00:00:00`).toLocaleDateString(locale === "es" ? "es-CL" : "en-US", {
-    year: "2-digit",
+    year: locale === "es" ? "2-digit" : "numeric",
     month: "short",
     day: "numeric",
   });
@@ -177,11 +183,11 @@ export default function App() {
       context.font = "14px Arial";
       context.fillText(`${data.summary.currentYear} YTD ${formatPct(data.summary.currentChangePct)}`, 14, 110);
       if (currentPoint) {
-        context.fillText(`Al ${formatDate(currentPoint.date, locale)}`, 210, 110);
+        context.fillText(`${ui.asOfLabel} ${formatDate(currentPoint.date, locale)}`, 210, 110);
       }
       context.fillStyle = "rgba(220, 220, 220, 0.82)";
-      context.fillText(`Minimo ${formatPct(extremes.min)}`, 14, 132);
-      context.fillText(`Maximo ${formatPct(extremes.max)}`, 170, 132);
+      context.fillText(`${ui.minLabel} ${formatPct(extremes.min)}`, 14, 132);
+      context.fillText(`${ui.maxLabel} ${formatPct(extremes.max)}`, 170, 132);
 
       context.drawImage(image, 0, headerHeight, exportWidth, chartHeight);
 
@@ -238,11 +244,11 @@ export default function App() {
           <div className="metrics-strip">
             <div className="metrics-top">
               <span>{data.summary.currentYear} YTD <strong className={data.summary.currentChangePct >= 0 ? "positive" : "negative"}>{formatPct(data.summary.currentChangePct)}</strong></span>
-              <span>{currentPoint ? `Al ${formatDate(currentPoint.date, locale)}` : ""}</span>
+              <span>{currentPoint ? `${ui.asOfLabel} ${formatDate(currentPoint.date, locale)}` : ""}</span>
             </div>
             <div className="metrics-bottom">
-              <span>Minimo {formatPct(extremes.min)}</span>
-              <span>Maximo {formatPct(extremes.max)}</span>
+              <span>{ui.minLabel} {formatPct(extremes.min)}</span>
+              <span>{ui.maxLabel} {formatPct(extremes.max)}</span>
             </div>
           </div>
           {ui.chartTitle ? <div className="chart-title">{ui.chartTitle}</div> : null}
