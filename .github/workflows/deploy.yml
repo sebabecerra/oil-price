@@ -34,9 +34,9 @@ jobs:
         working-directory: ./historical-real-oil-price
         run: npm ci
 
-      - name: Install dependencies (g2)
+      - name: Install dependencies (rally-oil-price)
         working-directory: ./rally-oil-price
-        run: npm ci
+        run: npm install
 
       - name: Build data
         working-directory: ./historical-real-oil-price
