@@ -25,6 +25,22 @@ body {
   margin: 10px auto 20px;
 }
 
+.export-surface {
+  position: fixed;
+  left: -200vw;
+  top: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.export-panel {
+  width: 1440px;
+}
+
+.export-head {
+  margin-bottom: 10px;
+}
+
 .panel {
   background: #050505;
   border: 1px solid rgba(255, 255, 255, 0.08);

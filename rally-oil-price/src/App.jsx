@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import LineByYearChart from "./LineByYearChart";
 
 const ACCENT = "#ffd166";
@@ -12,9 +12,10 @@ const UI_TEXT = {
     sourceLabel: "Source:",
     reloadLabel: "Reload",
     downloadLabel: "Download CSV",
+    downloadPngLabel: "Download PNG",
     g1Label: "Historical Oil Prices",
     homeLabel: "Open Macro Plots",
-    playLabel: "Reproducir",
+    playLabel: "Play",
     chartTitle: "",
     chartSubtitle:
       "Each grey line is a prior year. The gold line is the current year. Values are percentage change from the first trading day of each year.",
@@ -33,9 +34,10 @@ const UI_TEXT = {
     sourceLabel: "Fuente:",
     reloadLabel: "Recargar",
     downloadLabel: "Descargar CSV",
+    downloadPngLabel: "Descargar PNG",
     g1Label: "Historia del precio del petróleo",
     homeLabel: "Abrir Macro Plots",
-    playLabel: "Play",
+    playLabel: "Reproducir",
     chartTitle: "",
     chartSubtitle:
       "Cada línea gris es un año previo. La línea dorada es el año actual. Los valores muestran el cambio porcentual desde el primer día de trading de cada año.",
@@ -108,9 +110,11 @@ export default function App() {
   const [error, setError] = useState(null);
   const [lang, setLang] = useState("es");
   const [animationKey, setAnimationKey] = useState(0);
+  const chartRef = useRef(null);
+  const exportRef = useRef(null);
   const baseUrl = import.meta.env.BASE_URL;
   const dataUrl = `${baseUrl}data/oil-ytd-multiline.json`;
-    const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+  const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:4179/"
     : (baseUrl.endsWith("/rally-oil-price/") ? baseUrl.replace(/\/rally-oil-price\/$/, "/historical-real-oil-price/") : "/historical-real-oil-price/");
   const macroPlotsUrl = "https://sebabecerra.github.io/macro-plots/";
@@ -139,6 +143,69 @@ export default function App() {
   const currentPoint = currentSeries?.points.at(-1);
   const extremes = getHistoricalExtremes(data.series, data.summary.currentYear);
   const locale = lang === "es" ? "es" : "en";
+  const downloadPanelPng = () => {
+    const chartUrl = chartRef.current?.getPngDataUrl();
+    const exportNode = exportRef.current;
+    if (!chartUrl || !exportNode) return;
+    const image = new Image();
+
+    image.onload = () => {
+      const exportWidth = Math.round(exportNode.getBoundingClientRect().width) || 1580;
+      const headerHeight = 156;
+      const chartHeight = 760;
+      const footerHeight = 34;
+      const canvas = document.createElement("canvas");
+      canvas.width = exportWidth * 2;
+      canvas.height = (headerHeight + chartHeight + footerHeight) * 2;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return;
+      }
+      context.scale(2, 2);
+      context.fillStyle = "#050505";
+      context.fillRect(0, 0, exportWidth, headerHeight + chartHeight + footerHeight);
+
+      context.fillStyle = "#ffd166";
+      context.font = "700 30px Arial";
+      context.fillText(ui.heading, 28, 42);
+
+      context.fillStyle = "rgba(220, 220, 220, 0.62)";
+      context.font = "12px Arial";
+      context.fillText(ui.subtitle, 28, 66);
+
+      context.fillStyle = "rgba(242, 242, 242, 0.92)";
+      context.font = "14px Arial";
+      context.fillText(`${data.summary.currentYear} YTD ${formatPct(data.summary.currentChangePct)}`, 14, 110);
+      if (currentPoint) {
+        context.fillText(`Al ${formatDate(currentPoint.date, locale)}`, 210, 110);
+      }
+      context.fillStyle = "rgba(220, 220, 220, 0.82)";
+      context.fillText(`Minimo ${formatPct(extremes.min)}`, 14, 132);
+      context.fillText(`Maximo ${formatPct(extremes.max)}`, 170, 132);
+
+      context.drawImage(image, 0, headerHeight, exportWidth, chartHeight);
+
+      context.font = "italic 14px Arial";
+      context.fillText(`${ui.noteLabel} ${ui.chartSubtitle}`, 14, headerHeight + chartHeight - 18);
+      context.fillText(`${ui.sourceLabel} ${data.source}`, 14, headerHeight + chartHeight + 8);
+
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) {
+          return;
+        }
+        const pngUrl = URL.createObjectURL(pngBlob);
+        const link = document.createElement("a");
+        link.href = pngUrl;
+        link.download = "rally-oil-price.png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(pngUrl);
+      }, "image/png");
+    };
+
+    image.src = chartUrl;
+  };
 
   return (
     <main className="page">
@@ -150,6 +217,9 @@ export default function App() {
               <p className="dashboard-subtitle">{ui.subtitle}</p>
             </div>
             <div className="lang-switch" role="group" aria-label="Language switch">
+              <button type="button" className="lang-btn" onClick={downloadPanelPng}>
+                {ui.downloadPngLabel}
+              </button>
               <button type="button" className="lang-btn" onClick={() => downloadNormalizedCsv(data.series)}>
                 {ui.downloadLabel}
               </button>
@@ -164,7 +234,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="frame">
+        <div className="frame" ref={exportRef}>
           <div className="metrics-strip">
             <div className="metrics-top">
               <span>{data.summary.currentYear} YTD <strong className={data.summary.currentChangePct >= 0 ? "positive" : "negative"}>{formatPct(data.summary.currentChangePct)}</strong></span>
@@ -177,6 +247,7 @@ export default function App() {
           </div>
           {ui.chartTitle ? <div className="chart-title">{ui.chartTitle}</div> : null}
           <LineByYearChart
+            ref={chartRef}
             key={animationKey}
             dataset={data}
             accent={ACCENT}

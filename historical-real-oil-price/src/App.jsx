@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 const WIDTH = 1580;
 const HEIGHT = 760;
@@ -10,7 +11,6 @@ const ACCENT = "#ffd166";
 const Y_TICKS = [0, 20, 40, 60, 80, 100, 120, 140];
 const X_TICKS = [1861, 1870, 1880, 1890, 1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020, 2026];
 const ANIMATION_MS = 16000;
-
 const UI_TEXT = {
   en: {
     heading: 'History of Oil Prices',
@@ -19,6 +19,7 @@ const UI_TEXT = {
     sourceLabel: 'Source:',
     reloadLabel: 'Reload',
     downloadLabel: 'Download CSV',
+    downloadPngLabel: 'Download PNG',
     macroPlotsLabel: 'Open Macro Plots',
     rallyLabel: 'Rally 2026',
     chartTitle: 'Crude oil prices, $2014/bbl',
@@ -31,6 +32,7 @@ const UI_TEXT = {
     sourceLabel: 'Fuente:',
     reloadLabel: 'Recargar',
     downloadLabel: 'Descargar CSV',
+    downloadPngLabel: 'Descargar PNG',
     macroPlotsLabel: 'Abrir Macro Plots',
     rallyLabel: 'Rally 2026',
     chartTitle: 'Precio del petroleo, $2014/bbl',
@@ -248,6 +250,342 @@ function OverlayConnector({ item, minYear, maxYear, series, visible }) {
   );
 }
 
+function wrapText(text, maxChars) {
+  const inputLines = text.split('\n');
+  const result = [];
+
+  inputLines.forEach((inputLine) => {
+    const words = inputLine.split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      result.push('');
+      return;
+    }
+
+    let current = words[0];
+    for (let index = 1; index < words.length; index += 1) {
+      const next = `${current} ${words[index]}`;
+      if (next.length <= maxChars) {
+        current = next;
+      } else {
+        result.push(current);
+        current = words[index];
+      }
+    }
+    result.push(current);
+  });
+
+  return result;
+}
+
+function ExportOverlayBox({ item, lang }) {
+  const text = translate(lang, item.title, TITLE_TRANSLATIONS).replaceAll(' — ', '\n');
+  const lines = wrapText(text, Math.max(12, Math.floor((item.w - 20) / 7.3)));
+  return (
+    <g>
+      <rect
+        x={item.x}
+        y={item.y}
+        width={item.w}
+        height={item.h}
+        rx="8"
+        ry="8"
+        fill="rgba(50, 10, 10, 0.26)"
+        stroke="rgba(255, 59, 48, 0.95)"
+        strokeWidth="3"
+      />
+      {lines.map((line, index) => (
+        <text
+          key={`${item.title}-${index}`}
+          x={item.x + 10}
+          y={item.y + 15 + index * 13}
+          fill="#fff5f5"
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="13"
+          fontWeight="700"
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+function ExportAnnotation({ item, minYear, maxYear, series, lang }) {
+  const isHighlight = item.variant === 'highlight';
+  const titleColor = isHighlight ? '#ffd166' : '#f3f4f6';
+  const bodyColor = isHighlight ? '#ffe5a3' : 'rgba(229, 231, 235, 0.88)';
+  const anchorYear = resolveAnnotationYear(item);
+  const title = translate(lang, item.title, TITLE_TRANSLATIONS);
+  const bodyLines = translate(lang, item.body, BODY_TRANSLATIONS).split('\n');
+  const pointX = xScale(anchorYear, minYear, maxYear);
+  const pointY = yScale(interpolateValueAtYear(series, anchorYear));
+  const boxX = resolveAnnotationBoxX(item, minYear, maxYear);
+  const lineStartX = Math.max(boxX + 6, Math.min(boxX + item.w - 6, pointX));
+  const connectorFromTop = item.connectorSide === 'top';
+  const lineStartY = connectorFromTop ? item.y : item.y + 22 + bodyLines.length * 13;
+
+  return (
+    <g>
+      <line
+        x1={lineStartX}
+        y1={lineStartY}
+        x2={pointX}
+        y2={pointY}
+        stroke="rgba(180, 180, 180, 0.72)"
+        strokeWidth="1.25"
+        strokeDasharray="4 4"
+      />
+      <text
+        x={boxX}
+        y={item.y + 13}
+        fill={titleColor}
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="14"
+        fontWeight="700"
+      >
+        {title}
+      </text>
+      {bodyLines.map((line, index) => (
+        <text
+          key={`${item.title}-${index}`}
+          x={boxX}
+          y={item.y + 30 + index * 13}
+          fill={bodyColor}
+          fontFamily="Arial, Helvetica, sans-serif"
+          fontSize="12"
+          fontWeight="400"
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+function ChartSvgContent({ data, chart, progress, lang }) {
+  return (
+    <>
+      <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#050505" />
+
+      <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+      <line x1={MARGIN.left} y1={MARGIN.top + INNER_HEIGHT} x2={WIDTH - MARGIN.right} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+
+      {Y_TICKS.map((tick) => {
+        const y = yScale(tick);
+        return (
+          <g key={tick}>
+            <line x1={MARGIN.left - 4} y1={y} x2={MARGIN.left} y2={y} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+            <text x={MARGIN.left - 10} y={y + 4} className="axis axis-y" textAnchor="end">{tick}</text>
+          </g>
+        );
+      })}
+
+      {X_TICKS.map((tick) => {
+        const x = xScale(tick, chart.minYear, chart.maxYear);
+        return (
+          <g key={tick}>
+            <text x={x} y={MARGIN.top + INNER_HEIGHT + 24} className="axis axis-x" textAnchor="middle">
+              {tick === 2026 ? '2026*' : tick}
+            </text>
+          </g>
+        );
+      })}
+
+      <path
+        d={chart.path}
+        fill="none"
+        stroke={ACCENT}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        pathLength="1"
+        strokeDasharray="1"
+        strokeDashoffset={1 - progress}
+      />
+
+      {data.annotations.map((item) => (
+        <Annotation
+          key={item.title}
+          item={item}
+          showConnector={progress >= 1}
+          minYear={chart.minYear}
+          maxYear={chart.maxYear}
+          series={data.series}
+          lang={lang}
+          visible={chart.currentYear >= annotationTriggerYear(item)}
+        />
+      ))}
+
+      {(data.overlayBoxes ?? []).map((item) => (
+        <OverlayConnector
+          key={`${item.title}-connector`}
+          item={item}
+          minYear={chart.minYear}
+          maxYear={chart.maxYear}
+          series={data.series}
+          visible={progress >= 1}
+        />
+      ))}
+
+      {(data.overlayBoxes ?? []).map((item) => (
+        <OverlayBox key={item.title} item={item} visible={progress >= 1} lang={lang} />
+      ))}
+    </>
+  );
+}
+
+function ExportChartSvgContent({ data, chart, lang }) {
+  return (
+    <>
+      <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#050505" />
+
+      <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+      <line x1={MARGIN.left} y1={MARGIN.top + INNER_HEIGHT} x2={WIDTH - MARGIN.right} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+
+      {Y_TICKS.map((tick) => {
+        const y = yScale(tick);
+        return (
+          <g key={tick}>
+            <line x1={MARGIN.left - 4} y1={y} x2={MARGIN.left} y2={y} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
+            <text
+              x={MARGIN.left - 10}
+              y={y + 4}
+              textAnchor="end"
+              fill="rgba(242,242,242,0.96)"
+              fontFamily="Arial, Helvetica, sans-serif"
+              fontSize="17"
+              fontWeight="600"
+            >
+              {tick}
+            </text>
+          </g>
+        );
+      })}
+
+      {X_TICKS.map((tick) => {
+        const x = xScale(tick, chart.minYear, chart.maxYear);
+        return (
+          <g key={tick}>
+            <text
+              x={x}
+              y={MARGIN.top + INNER_HEIGHT + 24}
+              textAnchor="middle"
+              fill="rgba(242,242,242,0.96)"
+              fontFamily="Arial, Helvetica, sans-serif"
+              fontSize="17"
+              fontWeight="600"
+            >
+              {tick === 2026 ? '2026*' : tick}
+            </text>
+          </g>
+        );
+      })}
+
+      <path
+        d={chart.path}
+        fill="none"
+        stroke={ACCENT}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {data.annotations.map((item) => (
+        <ExportAnnotation
+          key={item.title}
+          item={item}
+          minYear={chart.minYear}
+          maxYear={chart.maxYear}
+          series={data.series}
+          lang={lang}
+        />
+      ))}
+
+      {(data.overlayBoxes ?? []).map((item) => (
+        <OverlayConnector
+          key={`${item.title}-connector`}
+          item={item}
+          minYear={chart.minYear}
+          maxYear={chart.maxYear}
+          series={data.series}
+          visible
+        />
+      ))}
+
+      {(data.overlayBoxes ?? []).map((item) => (
+        <ExportOverlayBox key={item.title} item={item} lang={lang} />
+      ))}
+    </>
+  );
+}
+
+function ExportSvg({ data, chart, ui, lang }) {
+  const noteText = `${ui.noteLabel} ${ui.chartSubtitle}`;
+  const sourceText = `${ui.sourceLabel} ${data.source}`;
+  const exportHeading = ui.heading;
+  const exportSubtitle = ui.subtitle;
+  const exportTitle = lang === 'en' ? 'Crude oil prices, $2014/bbl' : 'Precio del petroleo, $2014/bbl';
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={WIDTH} height={HEIGHT + 154} viewBox={`0 0 ${WIDTH} ${HEIGHT + 154}`}>
+      <rect x="0" y="0" width={WIDTH} height={HEIGHT + 154} fill="#050505" />
+      <text
+        x="14"
+        y="34"
+        fill="#ffd166"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="30"
+        fontWeight="700"
+      >
+        {exportHeading}
+      </text>
+      <text
+        x="14"
+        y="58"
+        fill="rgba(220,220,220,0.62)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="12"
+        fontWeight="400"
+      >
+        {exportSubtitle}
+      </text>
+      <text
+        x="14"
+        y="98"
+        fill="#f2f2f2"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="24"
+        fontWeight="400"
+      >
+        {exportTitle}
+      </text>
+      <g transform="translate(0, 78)">
+        <ExportChartSvgContent data={data} chart={chart} lang={lang} />
+      </g>
+      <text
+        x="14"
+        y={HEIGHT + 102}
+        fill="rgba(220,220,220,0.82)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="14"
+        fontStyle="italic"
+      >
+        {noteText}
+      </text>
+      <text
+        x="14"
+        y={HEIGHT + 126}
+        fill="rgba(220,220,220,0.82)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="14"
+        fontStyle="italic"
+      >
+        {sourceText}
+      </text>
+    </svg>
+  );
+}
+
 export default function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -307,6 +645,46 @@ export default function App() {
   }
 
   const ui = UI_TEXT[lang];
+  const exportChart = {
+    ...chart,
+    currentYear: chart.maxYear,
+  };
+
+  async function downloadChartPng() {
+    const svgString = renderToStaticMarkup(
+      <ExportSvg data={data} chart={exportChart} ui={ui} lang={lang} />
+    );
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = WIDTH * 2;
+      canvas.height = (HEIGHT + 92) * 2;
+      const context = canvas.getContext('2d');
+      context.scale(2, 2);
+      context.fillStyle = '#050505';
+      context.fillRect(0, 0, WIDTH, HEIGHT + 92);
+      context.drawImage(image, 0, 0, WIDTH, HEIGHT + 92);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = 'historical-real-oil-price.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
 
   return (
     <main className="page">
@@ -318,6 +696,9 @@ export default function App() {
               <p className="dashboard-subtitle">{ui.subtitle}</p>
             </div>
             <div className="lang-switch" role="group" aria-label="Language switch">
+              <button type="button" className="lang-btn" onClick={downloadChartPng}>
+                {ui.downloadPngLabel}
+              </button>
               <button type="button" className="lang-btn" onClick={() => downloadSeriesCsv(data.series)}>
                 {ui.downloadLabel}
               </button>
@@ -348,71 +729,7 @@ export default function App() {
           <div className="chart-title">{ui.chartTitle}</div>
 
           <svg className="chart" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={data.title}>
-          <rect x="0" y="0" width={WIDTH} height={HEIGHT} fill="#050505" />
-
-            <line x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
-            <line x1={MARGIN.left} y1={MARGIN.top + INNER_HEIGHT} x2={WIDTH - MARGIN.right} y2={MARGIN.top + INNER_HEIGHT} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
-
-          {Y_TICKS.map((tick) => {
-            const y = yScale(tick);
-            return (
-              <g key={tick}>
-                  <line x1={MARGIN.left - 4} y1={y} x2={MARGIN.left} y2={y} stroke="rgba(255,255,255,0.32)" strokeWidth="1" />
-                  <text x={MARGIN.left - 10} y={y + 4} className="axis axis-y" textAnchor="end">{tick}</text>
-              </g>
-            );
-            })}
-
-            {X_TICKS.map((tick) => {
-            const x = xScale(tick, chart.minYear, chart.maxYear);
-            return (
-                <g key={tick}>
-                  <text x={x} y={MARGIN.top + INNER_HEIGHT + 24} className="axis axis-x" textAnchor="middle">
-                    {tick === 2026 ? '2026*' : tick}
-                  </text>
-                </g>
-              );
-            })}
-
-            <path
-              d={chart.path}
-              fill="none"
-              stroke={ACCENT}
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              pathLength="1"
-              strokeDasharray="1"
-              strokeDashoffset={1 - progress}
-            />
-
-          {data.annotations.map((item) => (
-              <Annotation
-                key={item.title}
-                item={item}
-                showConnector={progress >= 1}
-                minYear={chart.minYear}
-                maxYear={chart.maxYear}
-                series={data.series}
-                lang={lang}
-                visible={chart.currentYear >= annotationTriggerYear(item)}
-              />
-            ))}
-
-          {(data.overlayBoxes ?? []).map((item) => (
-              <OverlayConnector
-                key={`${item.title}-connector`}
-                item={item}
-                minYear={chart.minYear}
-                maxYear={chart.maxYear}
-                series={data.series}
-                visible={progress >= 1}
-              />
-            ))}
-
-          {(data.overlayBoxes ?? []).map((item) => (
-              <OverlayBox key={item.title} item={item} visible={progress >= 1} lang={lang} />
-            ))}
+            <ChartSvgContent data={data} chart={chart} progress={progress} lang={lang} />
           </svg>
 
           <div className="footer-note"><em>{ui.noteLabel} {ui.chartSubtitle}</em></div>
@@ -432,6 +749,7 @@ export default function App() {
           </div>
         </div>
       </section>
+
     </main>
   );
 }

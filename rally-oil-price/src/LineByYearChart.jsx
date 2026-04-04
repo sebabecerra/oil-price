@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
 import { GridComponent, MarkPointComponent, TooltipComponent } from "echarts/components";
@@ -20,15 +20,104 @@ function formatHoverDate(value) {
   });
 }
 
-export default function LineByYearChart({ dataset, accent, animationKey, labels }) {
+function buildSeriesConfig({ dataset, accent, labels, fullDataBySeries, currentYear }) {
+  const highlightedYears = new Map([[1999, "rgba(255,255,255,0.22)"], [2020, "rgba(255,255,255,0.22)"], [currentYear, accent]]);
+
+  return dataset.series.map((entry, index) => {
+    const isCurrent = entry.year === currentYear;
+    const isHighlighted = highlightedYears.has(entry.year);
+    const color = highlightedYears.get(entry.year) ?? "rgba(255,255,255,0.22)";
+    const labelColor = entry.year === 1999 || entry.year === 2020 ? "rgba(255,255,255,0.5)" : color;
+    const fullData = fullDataBySeries[index] ?? [];
+    const minPoint = entry.year === 2020 && fullData.length
+      ? fullData.reduce((lowest, point) => (point[1] < lowest[1] ? point : lowest), fullData[0])
+      : null;
+
+    return {
+      name: String(entry.year),
+      type: "line",
+      showSymbol: false,
+      smooth: false,
+      z: isCurrent ? 10 : 2,
+      lineStyle: { color, width: isCurrent ? 3.25 : 1.1 },
+      emphasis: {
+        focus: "series",
+        lineStyle: { width: isCurrent ? 4 : 2 },
+      },
+      endLabel: isHighlighted && entry.year !== 2020 ? {
+        show: true,
+        formatter: `{a}`,
+        color: labelColor,
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: 14,
+        fontWeight: isCurrent ? 700 : 600,
+      } : undefined,
+      labelLayout: isHighlighted && entry.year !== 2020 ? { moveOverlap: 'shiftY' } : undefined,
+      markPoint: entry.year === 2020 && minPoint ? {
+        symbol: 'circle',
+        symbolSize: 1,
+        tooltip: { show: false },
+        label: {
+          show: true,
+          formatter: '2020',
+          color: labelColor,
+          fontFamily: "Arial, Helvetica, sans-serif",
+          fontSize: 14,
+          fontWeight: 600,
+          offset: [0, 12],
+        },
+        itemStyle: { color: 'transparent' },
+        data: [{ coord: [minPoint[0], minPoint[1]] }],
+      } : undefined,
+      data: fullData,
+    };
+  });
+}
+
+const LineByYearChart = forwardRef(function LineByYearChart({ dataset, accent, animationKey, labels }, forwardedRef) {
   const ref = useRef(null);
+  const chartRef = useRef(null);
+
+  useImperativeHandle(forwardedRef, () => ({
+    downloadPng(filename = "rally-oil-price.png") {
+      if (!chartRef.current) return;
+      const url = chartRef.current.getDataURL({
+        type: "png",
+        pixelRatio: 2,
+        backgroundColor: "#050505",
+      });
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+    getPngDataUrl() {
+      if (!chartRef.current) return null;
+      const currentYear = dataset.summary.currentYear;
+      const fullDataBySeries = dataset.series.map((entry) =>
+        entry.points.map((point) => [point.day, point.changePct, point.date, point.price]),
+      );
+      chartRef.current.setOption({
+        animation: false,
+        series: buildSeriesConfig({ dataset, accent, labels, fullDataBySeries, currentYear }),
+      });
+      chartRef.current.resize();
+      return chartRef.current.getDataURL({
+        type: "png",
+        pixelRatio: 2,
+        backgroundColor: "#050505",
+      });
+    },
+  }), []);
 
   useEffect(() => {
     if (!ref.current) return;
 
     const chart = init(ref.current, undefined, { renderer: "canvas" });
+    chartRef.current = chart;
     const currentYear = dataset.summary.currentYear;
-    const highlightedYears = new Map([[1999, "rgba(255,255,255,0.22)"], [2020, "rgba(255,255,255,0.22)"], [currentYear, accent]]);
     const currentSeriesIndex = dataset.series.findIndex((entry) => entry.year === currentYear);
     let lastMouseY = 0;
     let animationFrame = 0;
@@ -108,56 +197,11 @@ export default function LineByYearChart({ dataset, accent, animationKey, labels 
         },
         splitLine: { lineStyle: { color: "rgba(255,255,255,0.09)" } },
       },
-      series: dataset.series.map((entry) => {
-        const isCurrent = entry.year === currentYear;
-        const isHighlighted = highlightedYears.has(entry.year);
-        const color = highlightedYears.get(entry.year) ?? "rgba(255,255,255,0.22)";
-        const labelColor = entry.year === 1999 || entry.year === 2020 ? "rgba(255,255,255,0.5)" : color;
-        const fullData = allSeriesData.find((_, index) => dataset.series[index].year === entry.year) ?? [];
-        const data = isCurrent ? fullData.slice(0, 1) : fullData;
-        const minPoint = entry.year === 2020 && fullData.length
-          ? fullData.reduce((lowest, point) => (point[1] < lowest[1] ? point : lowest), fullData[0])
-          : null;
-
-        return {
-          name: String(entry.year),
-          type: "line",
-          showSymbol: false,
-          smooth: false,
-          z: isCurrent ? 10 : 2,
-          lineStyle: { color, width: isCurrent ? 3.25 : 1.1 },
-          emphasis: {
-            focus: "series",
-            lineStyle: { width: isCurrent ? 4 : 2 },
-          },
-          endLabel: isHighlighted && entry.year !== 2020 ? {
-            show: true,
-            formatter: `{a}`,
-            color: labelColor,
-            fontFamily: "Arial, Helvetica, sans-serif",
-            fontSize: 14,
-            fontWeight: isCurrent ? 700 : 600,
-          } : undefined,
-          labelLayout: isHighlighted && entry.year !== 2020 ? { moveOverlap: 'shiftY' } : undefined,
-          markPoint: entry.year === 2020 && minPoint ? {
-            symbol: 'circle',
-            symbolSize: 1,
-            tooltip: { show: false },
-            label: {
-              show: true,
-              formatter: '2020',
-              color: labelColor,
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontSize: 14,
-              fontWeight: 600,
-              offset: [0, 12],
-            },
-            itemStyle: { color: 'transparent' },
-            data: [{ coord: [minPoint[0], minPoint[1]] }],
-          } : undefined,
-          data,
-        };
-      }),
+      series: buildSeriesConfig({ dataset, accent, labels, fullDataBySeries: allSeriesData, currentYear }).map((entry) => (
+        entry.name === String(currentYear)
+          ? { ...entry, data: entry.data.slice(0, 1) }
+          : entry
+      )),
     });
 
     if (currentSeriesIndex >= 0) {
@@ -201,9 +245,12 @@ export default function LineByYearChart({ dataset, accent, animationKey, labels 
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
       zr.off("mousemove", handleMouseMove);
       resizeObserver.disconnect();
+      chartRef.current = null;
       chart.dispose();
     };
   }, [accent, animationKey, dataset, labels]);
 
   return <div className="chart-canvas" ref={ref} />;
-}
+});
+
+export default LineByYearChart;
