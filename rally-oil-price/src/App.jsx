@@ -5,7 +5,7 @@ const ACCENT = "#ffd166";
 
 const UI_TEXT = {
   en: {
-    heading: "Brent 2026: the most aggressive rally in 30 years",
+    heading: "Oil 2026: the most aggressive rally in 30 years",
     subtitle:
       "Brent Crude year-to-date price change for each year since 1996",
     noteLabel: "Note:",
@@ -26,7 +26,7 @@ const UI_TEXT = {
     error: "Could not load data:",
   },
   es: {
-    heading: "Brent 2026: el rally más agresivo en 30 años",
+    heading: "Petróleo 2026: el rally más agresivo en 30 años",
     subtitle:
       "Cambio acumulado en el año del precio del Brent para cada año desde 1996",
     noteLabel: "Nota:",
