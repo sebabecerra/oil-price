@@ -27,40 +27,40 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: |
-            g1/package-lock.json
-            g2/package-lock.json
+            historical-real-oil-price/package-lock.json
+            rally-oil-price/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./g1
+        working-directory: ./historical-real-oil-price
         run: npm ci
 
       - name: Install dependencies (g2)
-        working-directory: ./g2
+        working-directory: ./rally-oil-price
         run: npm ci
 
       - name: Build data
-        working-directory: ./g1
+        working-directory: ./historical-real-oil-price
         run: npm run build:data
 
       - name: Build data (g2)
-        working-directory: ./g2
+        working-directory: ./rally-oil-price
         run: npm run build:data
 
       - name: Build app
-        working-directory: ./g1
+        working-directory: ./historical-real-oil-price
         run: npm run build
 
       - name: Build app (g2)
-        working-directory: ./g2
+        working-directory: ./rally-oil-price
         run: npm run build
 
       - name: Assemble site
         run: |
           rm -rf site
-          mkdir -p site/g1 site/g2
+          mkdir -p site/historical-real-oil-price site/rally-oil-price
           cp index.html site/index.html
-          cp -R g1/dist/. site/g1/
-          cp -R g2/dist/. site/g2/
+          cp -R historical-real-oil-price/dist/. site/historical-real-oil-price/
+          cp -R rally-oil-price/dist/. site/rally-oil-price/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -2,12 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const isGithubActions = process.env.GITHUB_ACTIONS === "true";
-const repoName = "historical-real-oil-price";
+const repoName = "oil-price";
 
 export default defineConfig({
-  base: isGithubActions ? `/${repoName}/g2/` : "/",
+  base: isGithubActions ? `/${repoName}/historical-real-oil-price/` : "/",
   plugins: [react()],
   server: {
-    port: 5175,
+    port: 5174,
   },
 });

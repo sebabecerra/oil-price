@@ -1,11 +1,11 @@
-# Historical Real Oil Price
+# Oil Price
 
 Repository for multiple oil-chart apps that share the same visual language and deploy together to GitHub Pages.
 
 Structure:
 
-- `g1/`: historical real oil price chart
-- `g2/`: one-line-per-year WTI chart
+- `historical-real-oil-price/`: historical real oil price chart
+- `rally-oil-price/`: one-line-per-year Brent chart
 
 The repository root stays reserved for shared repo-level files such as the GitHub Pages workflow, the root index page, git config and future graph folders.
 
@@ -13,7 +13,7 @@ The repository root stays reserved for shared repo-level files such as the GitHu
 
 Run these from the graph folder you want:
 
-- `cd g1` or `cd g2`
+- `cd historical-real-oil-price` or `cd rally-oil-price`
 - `npm install`
 - `npm run build:data`
 - `npm run dev`
@@ -21,7 +21,7 @@ Run these from the graph folder you want:
 
 ## Data logic
 
-### G1
+### Historical Real Oil Price
 
 1. Use OWID real oil prices through 2024.
 2. Use FRED WTI spot prices to extend 2025 and 2026.
@@ -29,9 +29,9 @@ Run these from the graph folder you want:
 4. Link the recent segment to the OWID 2024 level.
 5. Convert the final series into `$2014/bbl`.
 
-### G2
+### Rally Oil Price
 
-1. Fetch daily `CL=F` history from Yahoo Finance.
+1. Fetch daily `DCOILBRENTEU` history from FRED.
 2. Split the series by calendar year.
 3. Normalize each year to its first trading day.
 4. Render one line per year with the current year highlighted.

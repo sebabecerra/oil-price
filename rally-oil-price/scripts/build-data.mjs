@@ -32,7 +32,7 @@ function parseCsv(text) {
 async function fetchFredSeries() {
   const response = await fetch(FRED_BRENT_URL, {
     headers: {
-      "User-Agent": "historical-real-oil-price-g2/1.0",
+      "User-Agent": "rally-oil-price/1.0",
       Accept: "text/csv,application/json;q=0.9,*/*;q=0.8",
     },
   });

@@ -110,9 +110,9 @@ export default function App() {
   const [animationKey, setAnimationKey] = useState(0);
   const baseUrl = import.meta.env.BASE_URL;
   const dataUrl = `${baseUrl}data/oil-ytd-multiline.json`;
-  const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:4179/"
-    : (baseUrl.endsWith("/g2/") ? baseUrl.replace(/\/g2\/$/, "/g1/") : "/g1/");
+    : (baseUrl.endsWith("/rally-oil-price/") ? baseUrl.replace(/\/rally-oil-price\/$/, "/historical-real-oil-price/") : "/historical-real-oil-price/");
   const macroPlotsUrl = "https://sebabecerra.github.io/macro-plots/";
 
   useEffect(() => {
