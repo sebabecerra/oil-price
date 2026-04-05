@@ -7,9 +7,9 @@ const UI = {
     downloadCsv: "Download CSV",
     downloadPng: "Download PNG",
     noteLabel: "Note:",
-    noteText: "Top panel shows monthly WTI candles aggregated from daily FRED observations. Bottom panel shows ROC(12), the year-over-year rate of change in the monthly close.",
+    noteText: "Top panel shows monthly WTI candles built from daily FRED observations through March 2026, plus a provisional April 2026 snapshot to capture the current move. Bottom panel shows ROC(12), the year-over-year rate of change in the monthly close.",
     sourceLabel: "Source:",
-    sourceText: "FRED DCOILWTICO.",
+    sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
   },
   es: {
     heading: "WTI Spot y ROC(12)",
@@ -17,9 +17,9 @@ const UI = {
     downloadCsv: "Descargar CSV",
     downloadPng: "Descargar PNG",
     noteLabel: "Nota:",
-    noteText: "El panel superior muestra velas mensuales del WTI agregadas desde observaciones diarias de FRED. El panel inferior muestra ROC(12), la tasa de cambio interanual del cierre mensual.",
+    noteText: "El panel superior muestra velas mensuales del WTI construidas con observaciones diarias de FRED hasta marzo de 2026, más una extensión provisional para abril de 2026 para capturar el movimiento actual. El panel inferior muestra ROC(12), la tasa de cambio interanual del cierre mensual.",
     sourceLabel: "Fuente:",
-    sourceText: "FRED DCOILWTICO.",
+    sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
   },
 };
 
@@ -32,6 +32,7 @@ const ROC_PANEL_HEIGHT = 140;
 const LEFT = 56;
 const RIGHT = 46;
 const INNER_WIDTH = WIDTH - LEFT - RIGHT;
+const DOMAIN_END = "2029-01-01";
 const EVENT_LAYOUTS = {
   "1987 Crash": { labelDx: -28, anchor: "end", searchStart: "1986-01-01", searchEnd: "1988-12-01" },
   "1990 Crash": { labelDx: -8, anchor: "end", searchStart: "1989-06-01", searchEnd: "1991-06-01" },
@@ -39,6 +40,22 @@ const EVENT_LAYOUTS = {
   "Financial Crisis": { labelDx: 0, anchor: "middle", searchStart: "2007-06-01", searchEnd: "2009-06-01" },
   "2022 Bear Market\nInflation / War / Rates": { labelDx: -72, anchor: "end", searchStart: "2021-01-01", searchEnd: "2023-06-01" },
 };
+
+function monthDistance(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+}
+
+function yearTickDates(startDate, endDate) {
+  const dates = [];
+  const startYear = Number(startDate.slice(0, 4));
+  const endYear = Number(endDate.slice(0, 4));
+  for (let year = startYear; year <= endYear; year += 1) {
+    dates.push(`${year}-01-01`);
+  }
+  return dates;
+}
 
 function formatDate(date, lang) {
   return new Date(`${date}T00:00:00`).toLocaleDateString(lang === "es" ? "es-CL" : "en-US", {
@@ -138,19 +155,22 @@ export default function App() {
     const rocMax = Math.max(220, ...rocVals);
     const priceTicks = [];
     for (let tick = priceMin; tick <= priceMax; tick += 20) priceTicks.push(tick);
-    const x = (i) => LEFT + (i / (candles.length - 1 || 1)) * INNER_WIDTH;
-    return { candles, priceMin, priceMax, priceTicks, rocMin, rocMax, x };
+    const domainStart = candles[0].date;
+    const domainEnd = DOMAIN_END;
+    const totalMonths = monthDistance(domainStart, domainEnd);
+    const xForDate = (date) => LEFT + (monthDistance(domainStart, date) / (totalMonths || 1)) * INNER_WIDTH;
+    const yearTicks = yearTickDates(domainStart, domainEnd);
+    return { candles, priceMin, priceMax, priceTicks, rocMin, rocMax, xForDate, yearTicks, domainStart, domainEnd };
   }, [data]);
 
   if (error) return <main className="page"><div className="status">Error: {error}</div></main>;
   if (!chart) return <main className="page"><div className="status">Loading…</div></main>;
 
-  const tickYears = chart.candles.filter((_, i) => i % 12 === 0).filter((d) => Number(d.date.slice(5, 7)) === 1);
+  const tickYears = chart.yearTicks.map((date) => ({ date }));
   const rocPoints = chart.candles
     .filter((d) => d.roc12 != null)
     .map((d) => {
-      const idx = chart.candles.findIndex((row) => row.date === d.date);
-      return [chart.x(idx), yScale(d.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT)];
+      return [chart.xForDate(d.date), yScale(d.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT)];
     });
 
   const eventAnchors = data.events.reduce((acc, event) => {
@@ -164,6 +184,9 @@ export default function App() {
 
   const late2022Candidates = chart.candles.filter((row) => row.roc12 != null && row.date >= "2021-08-01" && row.date <= "2022-06-01");
   const late2022Marker = late2022Candidates.length ? late2022Candidates.reduce((best, row) => (row.roc12 > best.roc12 ? row : best)) : null;
+
+  const latestRoc = [...chart.candles].reverse().find((row) => row.roc12 != null);
+  const latestRocY = latestRoc ? yScale(latestRoc.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT) : null;
 
   return (
     <main className="page">
@@ -186,10 +209,8 @@ export default function App() {
             <rect width={WIDTH} height={HEIGHT} fill="#050505" />
 
             <g>
-              {[...tickYears, ...["2027-01-01", "2028-01-01", "2029-01-01"].map((date) => ({ date }))].map((entry) => {
-                const idx = chart.candles.findIndex((d) => d.date === entry.date);
-                const extra = idx < 0 ? Number(entry.date.slice(0, 4)) - Number(chart.candles.at(-1).date.slice(0, 4)) : 0;
-                const x = idx >= 0 ? chart.x(idx) : chart.x(chart.candles.length - 1) + extra * (INNER_WIDTH / (chart.candles.length - 1 || 1)) * 12;
+              {tickYears.map((entry) => {
+                const x = chart.xForDate(entry.date);
                 return <line key={entry.date} x1={x} y1={PRICE_PANEL_TOP} x2={x} y2={ROC_PANEL_TOP + ROC_PANEL_HEIGHT} stroke="rgba(255,255,255,0.1)" />;
               })}
               {chart.priceTicks.map((tick) => {
@@ -210,10 +231,11 @@ export default function App() {
                   </g>
                 );
               })}
+              {latestRocY != null ? <line x1={LEFT} y1={latestRocY} x2={WIDTH - RIGHT} y2={latestRocY} stroke="rgba(180,180,180,0.8)" strokeWidth="1" /> : null}
             </g>
 
             {chart.candles.map((candle, i) => {
-              const x = chart.x(i);
+              const x = chart.xForDate(candle.date);
               const openY = yScale(candle.open, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
               const closeY = yScale(candle.close, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
               const highY = yScale(candle.high, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
@@ -231,8 +253,7 @@ export default function App() {
             <path d={linePath(rocPoints)} fill="none" stroke="#ffd166" strokeWidth="2.2" />
 
             {chart.candles.filter((d) => d.roc12 != null).map((d) => {
-              const idx = chart.candles.findIndex((row) => row.date === d.date);
-              const x = chart.x(idx);
+              const x = chart.xForDate(d.date);
               const y = yScale(d.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
               return <rect key={`roc-${d.date}`} x={x - 3} y={ROC_PANEL_TOP} width={6} height={ROC_PANEL_HEIGHT} fill="transparent" onMouseMove={() => setHover({ type: "roc", candle: d, x, y })} onMouseLeave={() => setHover(null)} />;
             })}
@@ -241,7 +262,7 @@ export default function App() {
               const anchorDate = eventAnchors[event.label] ?? event.date;
               const idx = chart.candles.findIndex((row) => row.date === anchorDate);
               if (idx < 0) return null;
-              const x = chart.x(idx);
+              const x = chart.xForDate(anchorDate);
               const y = yScale(chart.candles[idx].roc12 ?? 0, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
               const layout = EVENT_LAYOUTS[event.label] ?? { labelDx: 0, anchor: "middle" };
               if (event.variant === "highlight") {
@@ -250,7 +271,7 @@ export default function App() {
                   <g key={event.label}>
                     <rect x={boxX} y={ROC_PANEL_TOP - 4} width={150} height={ROC_PANEL_HEIGHT - 10} fill="rgba(255,96,80,0.28)" stroke="rgba(255,96,80,0.55)" />
                     <text x={boxX + 18} y={ROC_PANEL_TOP + 28} className="event-highlight">{event.label}</text>
-                    {late2022Marker ? (() => { const markerIdx = chart.candles.findIndex((row) => row.date === late2022Marker.date); const markerX = chart.x(markerIdx); return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />; })() : null}
+                    {late2022Marker ? (() => { const markerX = chart.xForDate(late2022Marker.date); return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />; })() : null}
                     <path d={`M ${x - 6} ${ROC_PANEL_TOP + 40} L ${x + 6} ${ROC_PANEL_TOP + 40} L ${x} ${ROC_PANEL_TOP + 52} Z`} fill="#5b1f17" />
                   </g>
                 );
@@ -270,10 +291,8 @@ export default function App() {
               );
             })}
 
-            {[...tickYears, ...["2027-01-01", "2028-01-01", "2029-01-01"].map((date) => ({ date }))].map((entry) => {
-              const idx = chart.candles.findIndex((d) => d.date === entry.date);
-              const extra = idx < 0 ? Number(entry.date.slice(0, 4)) - Number(chart.candles.at(-1).date.slice(0, 4)) : 0;
-              const x = idx >= 0 ? chart.x(idx) : chart.x(chart.candles.length - 1) + extra * (INNER_WIDTH / (chart.candles.length - 1 || 1)) * 12;
+            {tickYears.map((entry) => {
+              const x = chart.xForDate(entry.date);
               return <text key={`x-${entry.date}`} x={x} y={ROC_PANEL_TOP - 10} textAnchor="middle" className="x-axis-year">{entry.date.slice(2, 4)}</text>;
             })}
 

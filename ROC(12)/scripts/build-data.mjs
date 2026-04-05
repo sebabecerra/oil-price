@@ -7,6 +7,16 @@ const root = resolve(__dirname, "..");
 const outDir = resolve(root, "public/data");
 const outFile = resolve(outDir, "wti-roc12.json");
 const FRED_WTI_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILWTICO";
+const APRIL_2026_SNAPSHOT = {
+  month: "2026-04",
+  date: "2026-04-01",
+  open: 101.72,
+  high: 113.97,
+  low: 96.5,
+  close: 111.54,
+  snapshotDate: "2026-04-02",
+  snapshotSource: "StockCharts reference snapshot provided by user",
+};
 
 const events = [
   { label: "1987 Crash", date: "1987-10-01" },
@@ -77,6 +87,12 @@ function aggregateMonthly(rows) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function mergeCurrentMonthSnapshot(monthly) {
+  const filtered = monthly.filter((entry) => entry.date !== APRIL_2026_SNAPSHOT.date);
+  filtered.push(APRIL_2026_SNAPSHOT);
+  return filtered.sort((a, b) => a.date.localeCompare(b.date));
+}
+
 function addRoc(monthly) {
   return monthly.map((entry, index) => {
     if (index < 12) {
@@ -89,14 +105,15 @@ function addRoc(monthly) {
 }
 
 const rows = parseCsv(await fetchText(FRED_WTI_URL));
-const monthly = addRoc(aggregateMonthly(rows));
+const monthly = addRoc(mergeCurrentMonthSnapshot(aggregateMonthly(rows)));
 const latest = monthly.at(-1);
 
 const payload = {
   generatedAt: new Date().toISOString(),
   title: "WTI Spot and ROC(12)",
   subtitle: "Monthly WTI spot candles with 12-month rate of change.",
-  source: "FRED DCOILWTICO",
+  source: "FRED DCOILWTICO + Apr-2026 provisional snapshot",
+  currentMonthExtension: APRIL_2026_SNAPSHOT,
   latest,
   range: { start: monthly[0].date, end: latest.date },
   events,

@@ -1,20 +1,32 @@
 {
-  "generatedAt": "2026-04-05T13:13:55.181Z",
+  "generatedAt": "2026-04-05T13:32:53.912Z",
   "title": "WTI Spot and ROC(12)",
   "subtitle": "Monthly WTI spot candles with 12-month rate of change.",
-  "source": "FRED DCOILWTICO",
+  "source": "FRED DCOILWTICO + Apr-2026 provisional snapshot",
+  "currentMonthExtension": {
+    "month": "2026-04",
+    "date": "2026-04-01",
+    "open": 101.72,
+    "high": 113.97,
+    "low": 96.5,
+    "close": 111.54,
+    "snapshotDate": "2026-04-02",
+    "snapshotSource": "StockCharts reference snapshot provided by user"
+  },
   "latest": {
-    "month": "2026-03",
-    "date": "2026-03-01",
-    "open": 71.13,
-    "high": 104.69,
-    "low": 71.13,
-    "close": 104.69,
-    "roc12": 45.67
+    "month": "2026-04",
+    "date": "2026-04-01",
+    "open": 101.72,
+    "high": 113.97,
+    "low": 96.5,
+    "close": 111.54,
+    "snapshotDate": "2026-04-02",
+    "snapshotSource": "StockCharts reference snapshot provided by user",
+    "roc12": 87.3
   },
   "range": {
     "start": "1986-01-01",
-    "end": "2026-03-01"
+    "end": "2026-04-01"
   },
   "events": [
     {
@@ -4390,6 +4402,17 @@
       "low": 71.13,
       "close": 104.69,
       "roc12": 45.67
+    },
+    {
+      "month": "2026-04",
+      "date": "2026-04-01",
+      "open": 101.72,
+      "high": 113.97,
+      "low": 96.5,
+      "close": 111.54,
+      "snapshotDate": "2026-04-02",
+      "snapshotSource": "StockCharts reference snapshot provided by user",
+      "roc12": 87.3
     }
   ]
 }
