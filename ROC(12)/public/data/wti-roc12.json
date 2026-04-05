@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-05T13:32:53.912Z",
+  "generatedAt": "2026-04-05T23:05:18.485Z",
   "title": "WTI Spot and ROC(12)",
   "subtitle": "Monthly WTI spot candles with 12-month rate of change.",
   "source": "FRED DCOILWTICO + Apr-2026 provisional snapshot",
@@ -50,8 +50,8 @@
       "date": "2022-06-01"
     },
     {
-      "label": "IT'S BACK!",
-      "date": "2026-03-01",
+      "label": "2026",
+      "date": "2026-01-01",
       "variant": "highlight"
     }
   ],

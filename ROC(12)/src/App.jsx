@@ -46,7 +46,7 @@ const EVENT_LAYOUTS = {
   "1990 Crash": { labelDx: -8, anchor: "end", searchStart: "1989-06-01", searchEnd: "1991-06-01" },
   "DOT COM": { labelDx: 0, anchor: "middle", searchStart: "1999-01-01", searchEnd: "2001-03-01" },
   "Financial Crisis": { labelDx: 0, anchor: "middle", searchStart: "2007-06-01", searchEnd: "2009-06-01" },
-  "2022 Bear Market\nInflation / War / Rates": { labelDx: -72, anchor: "end", searchStart: "2021-01-01", searchEnd: "2023-06-01" },
+  "2022 Bear Market\nInflation / War / Rates": { labelDx: -72, anchor: "end", searchStart: "2021-01-01", searchEnd: "2023-06-01", arrowDx: -4, arrowDy: 14, horizontalArrow: true, rightArrowHead: true, lineStartDx: 10, labelDy: -12 },
 };
 
 function monthDistance(startDate, endDate) {
@@ -137,6 +137,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
   const [chartKey, setChartKey] = useState(0);
+  const [progress, setProgress] = useState(0);
   const svgRef = useRef(null);
   const baseUrl = import.meta.env.BASE_URL;
   const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
@@ -156,6 +157,24 @@ export default function App() {
       .then(setData)
       .catch((e) => setError(e.message));
   }, [baseUrl]);
+
+  useEffect(() => {
+    if (!data) return undefined;
+
+    let frame = 0;
+    const start = performance.now();
+    const duration = 2200;
+
+    const tick = (now) => {
+      const next = Math.min((now - start) / duration, 1);
+      setProgress(next);
+      if (next < 1) frame = requestAnimationFrame(tick);
+    };
+
+    setProgress(0);
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [data, chartKey]);
 
   const ui = UI[lang];
 
@@ -183,8 +202,10 @@ export default function App() {
   if (error) return <main className="page"><div className="status">Error: {error}</div></main>;
   if (!chart) return <main className="page"><div className="status">Loading…</div></main>;
 
+  const visibleCount = Math.max(1, Math.ceil(chart.candles.length * progress));
+  const visibleCandles = chart.candles.slice(0, visibleCount);
   const tickYears = chart.yearTicks.map((date) => ({ date }));
-  const rocPoints = chart.candles
+  const rocPoints = visibleCandles
     .filter((d) => d.roc12 != null)
     .map((d) => {
       return [chart.xForDate(d.date), yScale(d.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT)];
@@ -202,9 +223,8 @@ export default function App() {
   const late2022Candidates = chart.candles.filter((row) => row.roc12 != null && row.date >= "2021-08-01" && row.date <= "2022-06-01");
   const late2022Marker = late2022Candidates.length ? late2022Candidates.reduce((best, row) => (row.roc12 > best.roc12 ? row : best)) : null;
 
-  const latestRoc = [...chart.candles].reverse().find((row) => row.roc12 != null);
+  const latestRoc = [...visibleCandles].reverse().find((row) => row.roc12 != null);
   const latestRocY = latestRoc ? yScale(latestRoc.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT) : null;
-
   return (
     <main className="page">
       <section className="panel">
@@ -234,15 +254,10 @@ export default function App() {
             <rect width={WIDTH} height={HEIGHT} fill="#050505" />
 
             <g>
-              {tickYears.map((entry) => {
-                const x = chart.xForDate(entry.date);
-                return <line key={entry.date} x1={x} y1={PRICE_PANEL_TOP} x2={x} y2={ROC_PANEL_TOP + ROC_PANEL_HEIGHT} stroke="rgba(255,255,255,0.1)" />;
-              })}
               {chart.priceTicks.map((tick) => {
                 const y = yScale(tick, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
                 return (
                   <g key={`p-${tick}`}>
-                    <line x1={LEFT} y1={y} x2={WIDTH - RIGHT} y2={y} stroke="rgba(255,255,255,0.08)" />
                     <text x={WIDTH - 8} y={y + 4} textAnchor="end" className="axis-label">{tick}</text>
                   </g>
                 );
@@ -251,7 +266,6 @@ export default function App() {
                 const y = yScale(tick, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
                 return (
                   <g key={`r-${tick}`}>
-                    <line x1={LEFT} y1={y} x2={WIDTH - RIGHT} y2={y} stroke="rgba(255,255,255,0.08)" />
                     <text x={WIDTH - 8} y={y + 4} textAnchor="end" className="axis-label">{tick}</text>
                   </g>
                 );
@@ -259,7 +273,7 @@ export default function App() {
               {latestRocY != null ? <line x1={LEFT} y1={latestRocY} x2={WIDTH - RIGHT} y2={latestRocY} stroke="rgba(180,180,180,0.8)" strokeWidth="1" /> : null}
             </g>
 
-            {chart.candles.map((candle, i) => {
+            {visibleCandles.map((candle) => {
               const x = chart.xForDate(candle.date);
               const openY = yScale(candle.open, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
               const closeY = yScale(candle.close, chart.priceMin, chart.priceMax, PRICE_PANEL_TOP, PRICE_PANEL_HEIGHT);
@@ -275,15 +289,14 @@ export default function App() {
               );
             })}
 
-            <path d={linePath(rocPoints)} fill="none" stroke="#ffd166" strokeWidth="2.2" />
-
-            {chart.candles.filter((d) => d.roc12 != null).map((d) => {
+            {visibleCandles.filter((d) => d.roc12 != null).map((d) => {
               const x = chart.xForDate(d.date);
               const y = yScale(d.roc12, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
               return <rect key={`roc-${d.date}`} x={x - 3} y={ROC_PANEL_TOP} width={6} height={ROC_PANEL_HEIGHT} fill="transparent" onMouseMove={() => setHover({ type: "roc", candle: d, x, y })} onMouseLeave={() => setHover(null)} />;
             })}
 
             {data.events.map((event) => {
+              if (event.variant !== "highlight" && progress < 0.92) return null;
               const anchorDate = eventAnchors[event.label] ?? event.date;
               const idx = chart.candles.findIndex((row) => row.date === anchorDate);
               if (idx < 0) return null;
@@ -291,30 +304,48 @@ export default function App() {
               const y = yScale(chart.candles[idx].roc12 ?? 0, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
               const layout = EVENT_LAYOUTS[event.label] ?? { labelDx: 0, anchor: "middle" };
               if (event.variant === "highlight") {
-                const boxX = WIDTH - RIGHT - 154;
+                const boxX = chart.xForDate(event.date);
+                const boxWidth = WIDTH - RIGHT - boxX;
                 return (
                   <g key={event.label}>
-                    <rect x={boxX} y={ROC_PANEL_TOP - 4} width={150} height={ROC_PANEL_HEIGHT - 10} fill="rgba(255,96,80,0.28)" stroke="rgba(255,96,80,0.55)" />
+                    <rect x={boxX} y={ROC_PANEL_TOP - 4} width={boxWidth} height={ROC_PANEL_HEIGHT - 10} fill="rgba(255,96,80,0.28)" stroke="rgba(255,96,80,0.55)" />
                     <text x={boxX + 18} y={ROC_PANEL_TOP + 28} className="event-highlight">{event.label}</text>
-                    {late2022Marker ? (() => { const markerX = chart.xForDate(late2022Marker.date); return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />; })() : null}
-                    <path d={`M ${x - 6} ${ROC_PANEL_TOP + 40} L ${x + 6} ${ROC_PANEL_TOP + 40} L ${x} ${ROC_PANEL_TOP + 52} Z`} fill="#5b1f17" />
+                    {progress >= 0.92 && late2022Marker ? (() => { const markerX = chart.xForDate(late2022Marker.date); return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />; })() : null}
                   </g>
                 );
               }
               const lines = event.label.split("\n");
               const labelX = x + layout.labelDx;
+              const arrowX = x + (layout.arrowDx ?? 0);
+              const arrowY = y + (layout.arrowDy ?? 0);
+              const lineY = arrowY - 12;
+              const isHorizontalArrow = layout.horizontalArrow === true;
+              const isRightArrowHead = layout.rightArrowHead === true;
+              const lineStartX = labelX + (layout.lineStartDx ?? 0);
+              const labelY = ROC_PANEL_TOP + 18 + (layout.labelDy ?? 0);
               return (
                 <g key={event.label}>
-                  <text x={labelX} y={ROC_PANEL_TOP + 18} textAnchor={layout.anchor} className="event-label">
+                  <text x={labelX} y={labelY} textAnchor={layout.anchor} className="event-label">
                     {lines.map((line, lineIdx) => (
                       <tspan key={lineIdx} x={labelX} dy={lineIdx === 0 ? 0 : 16}>{line}</tspan>
                     ))}
                   </text>
-                  <path d={`M ${labelX} ${ROC_PANEL_TOP + 24 + (lines.length - 1) * 16} L ${x} ${y - 12}`} stroke="#3a66ff" strokeWidth="1.4" />
-                  <path d={`M ${x - 6} ${y - 12} L ${x + 6} ${y - 12} L ${x} ${y - 2} Z`} fill="#3a66ff" />
+                  <path d={isHorizontalArrow
+                    ? `M ${lineStartX} ${lineY} L ${arrowX} ${lineY}`
+                    : `M ${labelX} ${ROC_PANEL_TOP + 24 + (lines.length - 1) * 16} L ${arrowX} ${arrowY - 12}`}
+                    stroke="#3a66ff"
+                    strokeWidth="3.6"
+                  />
+                  <path d={isRightArrowHead
+                    ? `M ${arrowX - 10} ${arrowY - 18} L ${arrowX - 10} ${arrowY - 6} L ${arrowX} ${arrowY - 12} Z`
+                    : `M ${arrowX - 6} ${arrowY - 12} L ${arrowX + 6} ${arrowY - 12} L ${arrowX} ${arrowY - 2} Z`}
+                    fill="#3a66ff"
+                  />
                 </g>
               );
             })}
+
+            <path d={linePath(rocPoints)} fill="none" stroke="#ffd166" strokeWidth="2.2" />
 
             {tickYears.map((entry) => {
               const x = chart.xForDate(entry.date);
@@ -348,7 +379,7 @@ export default function App() {
                 setChartKey((value) => value + 1);
               }}
             >
-              ↻
+              ▶
             </button>
           </div>
         </div>
