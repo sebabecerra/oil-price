@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #000000;
+  color: #f2f2f2;
+}
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: #000000; }
+.page { width: min(1480px, calc(100vw - 32px)); margin: 10px auto 20px; }
+.panel { background: #050505; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 12px 14px; }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.dashboard-title { margin: 0; color: #f2f2f2; font-size: 30px; line-height: 1; letter-spacing: -0.03em; }
+.dashboard-title-accent { color: #ffd166; margin-bottom: 6px; }
+.dashboard-subtitle { margin: 6px 0 0; max-width: 920px; color: rgba(220,220,220,0.62); font-size: 12px; line-height: 1.45; }
+.lang-switch { display: flex; gap: 8px; }
+.lang-btn { border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); color: #d1d5db; border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.lang-btn-active { border-color: rgba(255,209,102,0.55); color: #ffd166; }
+.frame { background: #050505; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden; }
+.chart { width: 100%; height: auto; display: block; }
+.status { max-width: 960px; margin: 80px auto; padding: 24px; background: #050505; border: 1px solid rgba(255,255,255,0.08); color: #f2f2f2; }
+.axis-label { fill: rgba(255,255,255,0.88); font-size: 12px; }
+.x-axis-year { fill: rgba(255,255,255,0.82); font-size: 12px; }
+.event-label { fill: #385dff; font-size: 14px; font-weight: 700; }
+.event-highlight { fill: rgba(255, 255, 255, 0.94); font-size: 24px; font-weight: 900; letter-spacing: 0.01em; }
+.tooltip-title { fill: #f2f2f2; font-size: 14px; font-weight: 700; }
+.tooltip-body { fill: rgba(244,247,251,0.92); font-size: 12px; }
+.footer-note, .footer-source { padding-left: 16px; padding-right: 16px; color: rgba(220,220,220,0.82); font-size: 14px; }
+.footer-note { margin: 0; margin-top: 4px; }
+.footer-source { margin: 4px 0 12px; }
+.footer-note span, .footer-source span { font-style: italic; font-weight: 700; }
+@media (max-width: 960px) {
+  .page { width: min(100vw, calc(100vw - 16px)); margin: 8px auto 14px; }
+  .panel { padding: 8px; }
+  .panel-head { flex-direction: column; }
+}
