@@ -6,20 +6,28 @@ const UI = {
     subtitle: "Monthly WTI spot candles with a 12-month rate-of-change panel.",
     downloadCsv: "Download CSV",
     downloadPng: "Download PNG",
+    reloadLabel: "Reload",
     noteLabel: "Note:",
     noteText: "Top panel shows monthly WTI candles built from daily FRED observations through March 2026, plus a provisional April 2026 snapshot to capture the current move. Bottom panel shows ROC(12), the year-over-year rate of change in the monthly close.",
     sourceLabel: "Source:",
     sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
+    homeLabel: "Open Macro Plots",
+    historicalLabel: "Historical Oil Prices",
+    rallyLabel: "Rally 2026",
   },
   es: {
     heading: "WTI Spot y ROC(12)",
     subtitle: "Velas mensuales del WTI spot con panel inferior de tasa de cambio a 12 meses.",
     downloadCsv: "Descargar CSV",
     downloadPng: "Descargar PNG",
+    reloadLabel: "Recargar",
     noteLabel: "Nota:",
     noteText: "El panel superior muestra velas mensuales del WTI construidas con observaciones diarias de FRED hasta marzo de 2026, más una extensión provisional para abril de 2026 para capturar el movimiento actual. El panel inferior muestra ROC(12), la tasa de cambio interanual del cierre mensual.",
     sourceLabel: "Fuente:",
     sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
+    homeLabel: "Abrir Macro Plots",
+    historicalLabel: "Historia del precio del petróleo",
+    rallyLabel: "Rally 2026",
   },
 };
 
@@ -128,17 +136,26 @@ export default function App() {
   const [lang, setLang] = useState("es");
   const [error, setError] = useState(null);
   const [hover, setHover] = useState(null);
+  const [chartKey, setChartKey] = useState(0);
   const svgRef = useRef(null);
+  const baseUrl = import.meta.env.BASE_URL;
+  const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:5174/"
+    : (baseUrl.endsWith("/ROC(12)/") ? baseUrl.replace(/\/ROC\(12\)\/$/, "/historical-real-oil-price/") : "/historical-real-oil-price/");
+  const rallyUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:5175/"
+    : (baseUrl.endsWith("/ROC(12)/") ? baseUrl.replace(/\/ROC\(12\)\/$/, "/rally-oil-price/") : "/rally-oil-price/");
+  const macroPlotsUrl = "https://sebabecerra.github.io/macro-plots/";
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data/wti-roc12.json`)
+    fetch(`${baseUrl}data/wti-roc12.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then(setData)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [baseUrl]);
 
   const ui = UI[lang];
 
@@ -192,20 +209,28 @@ export default function App() {
     <main className="page">
       <section className="panel">
         <div className="panel-head">
-          <div>
-            <h1 className="dashboard-title dashboard-title-accent">{ui.heading}</h1>
-            <p className="dashboard-subtitle">{ui.subtitle}</p>
+          <div className="panel-controls">
+            <div>
+              <h1 className="dashboard-title dashboard-title-accent">{ui.heading}</h1>
+              <p className="dashboard-subtitle">{ui.subtitle}</p>
+            </div>
+            <div className="lang-switch">
+              <button type="button" className="lang-btn" onClick={() => downloadSvgPng(svgRef.current)}>{ui.downloadPng}</button>
+              <button type="button" className="lang-btn" onClick={() => downloadCsv(chart.candles)}>{ui.downloadCsv}</button>
+              <button type="button" className={`lang-btn ${lang === "es" ? "lang-btn-active" : ""}`} onClick={() => setLang("es")}>ES</button>
+              <button type="button" className={`lang-btn ${lang === "en" ? "lang-btn-active" : ""}`} onClick={() => setLang("en")}>EN</button>
+            </div>
           </div>
-          <div className="lang-switch">
-            <button type="button" className="lang-btn" onClick={() => downloadSvgPng(svgRef.current)}>{ui.downloadPng}</button>
-            <button type="button" className="lang-btn" onClick={() => downloadCsv(chart.candles)}>{ui.downloadCsv}</button>
-            <button type="button" className={`lang-btn ${lang === "es" ? "lang-btn-active" : ""}`} onClick={() => setLang("es")}>ES</button>
-            <button type="button" className={`lang-btn ${lang === "en" ? "lang-btn-active" : ""}`} onClick={() => setLang("en")}>EN</button>
+          <div className="brand-row">
+            <a className="lang-btn link-btn" href={macroPlotsUrl} target="_blank" rel="noreferrer">{ui.homeLabel}</a>
+            <a className="lang-btn link-btn" href={historicalUrl}>{ui.historicalLabel}</a>
+            <a className="lang-btn link-btn" href={rallyUrl}>{ui.rallyLabel}</a>
+            <img src={`${baseUrl}logo_clean.png`} alt="SB" className="brand-logo" />
           </div>
         </div>
 
         <div className="frame">
-          <svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="chart" role="img" aria-label={ui.heading}>
+          <svg key={chartKey} ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="chart" role="img" aria-label={ui.heading}>
             <rect width={WIDTH} height={HEIGHT} fill="#050505" />
 
             <g>
@@ -313,6 +338,19 @@ export default function App() {
           </svg>
           <p className="footer-note"><span>{ui.noteLabel}</span> {ui.noteText}</p>
           <p className="footer-source"><span>{ui.sourceLabel}</span> {ui.sourceText}</p>
+          <div className="corner-actions">
+            <button
+              type="button"
+              className="play-btn"
+              aria-label={ui.reloadLabel}
+              onClick={() => {
+                setHover(null);
+                setChartKey((value) => value + 1);
+              }}
+            >
+              ↻
+            </button>
+          </div>
         </div>
       </section>
     </main>

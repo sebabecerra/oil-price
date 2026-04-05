@@ -9,14 +9,18 @@ html, body, #root { min-height: 100%; }
 body { margin: 0; background: #000000; }
 .page { width: min(1480px, calc(100vw - 32px)); margin: 10px auto 20px; }
 .panel { background: #050505; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 12px 14px; }
-.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.panel-head { margin-bottom: 10px; }
+.panel-controls { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .dashboard-title { margin: 0; color: #f2f2f2; font-size: 30px; line-height: 1; letter-spacing: -0.03em; }
 .dashboard-title-accent { color: #ffd166; margin-bottom: 6px; }
 .dashboard-subtitle { margin: 6px 0 0; max-width: 920px; color: rgba(220,220,220,0.62); font-size: 12px; line-height: 1.45; }
 .lang-switch { display: flex; gap: 8px; }
 .lang-btn { border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); color: #d1d5db; border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .lang-btn-active { border-color: rgba(255,209,102,0.55); color: #ffd166; }
-.frame { background: #050505; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; overflow: hidden; }
+.link-btn { display: inline-flex; align-items: center; text-decoration: none; border: 1px solid rgba(255,209,102,0.28); background: rgba(255,209,102,0.08); border-radius: 999px; padding: 8px 14px; color: #ffd166; font-size: 14px; font-weight: 700; }
+.brand-row { display: flex; justify-content: flex-start; align-items: center; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+.brand-logo { margin-left: auto; width: 78px; height: auto; opacity: 0.96; filter: brightness(0) invert(1); }
+.frame { background: #050505; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; overflow: visible; position: relative; }
 .chart { width: 100%; height: auto; display: block; }
 .status { max-width: 960px; margin: 80px auto; padding: 24px; background: #050505; border: 1px solid rgba(255,255,255,0.08); color: #f2f2f2; }
 .axis-label { fill: rgba(255,255,255,0.88); font-size: 12px; }
@@ -25,12 +29,15 @@ body { margin: 0; background: #000000; }
 .event-highlight { fill: rgba(255, 255, 255, 0.94); font-size: 24px; font-weight: 900; letter-spacing: 0.01em; }
 .tooltip-title { fill: #f2f2f2; font-size: 14px; font-weight: 700; }
 .tooltip-body { fill: rgba(244,247,251,0.92); font-size: 12px; }
-.footer-note, .footer-source { padding-left: 16px; padding-right: 16px; color: rgba(220,220,220,0.82); font-size: 14px; }
+.play-btn { width: 42px; height: 42px; border: 1px solid rgba(255,209,102,0.35); border-radius: 999px; background: rgba(255,209,102,0.08); color: #ffd166; font: inherit; font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer; }
+.footer-note, .footer-source { padding-left: 16px; padding-right: 64px; color: rgba(220,220,220,0.82); font-size: 14px; }
 .footer-note { margin: 0; margin-top: 4px; }
 .footer-source { margin: 4px 0 12px; }
 .footer-note span, .footer-source span { font-style: italic; font-weight: 700; }
+.corner-actions { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 22px; }
 @media (max-width: 960px) {
   .page { width: min(100vw, calc(100vw - 16px)); margin: 8px auto 14px; }
   .panel { padding: 8px; }
-  .panel-head { flex-direction: column; }
+  .panel-controls { flex-direction: column; }
+  .brand-logo { margin-left: 0; }
 }

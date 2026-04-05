@@ -6,6 +6,7 @@ Structure:
 
 - `historical-real-oil-price/`: historical real oil price chart
 - `rally-oil-price/`: one-line-per-year Brent chart
+- `ROC(12)/`: monthly WTI candles with a 12-month rate-of-change panel
 
 The repository root stays reserved for shared repo-level files such as the GitHub Pages workflow, the root index page, git config and future graph folders.
 
@@ -13,7 +14,7 @@ The repository root stays reserved for shared repo-level files such as the GitHu
 
 Run these from the graph folder you want:
 
-- `cd historical-real-oil-price` or `cd rally-oil-price`
+- `cd historical-real-oil-price`, `cd rally-oil-price`, or `cd ROC(12)`
 - `npm install`
 - `npm run build:data`
 - `npm run dev`
@@ -35,3 +36,10 @@ Run these from the graph folder you want:
 2. Split the series by calendar year.
 3. Normalize each year to its first trading day.
 4. Render one line per year with the current year highlighted.
+
+### ROC(12)
+
+1. Fetch daily `DCOILWTICO` history from FRED.
+2. Aggregate the series into monthly OHLC candles.
+3. Extend the latest month with the provisional current snapshot.
+4. Compute the 12-month rate of change from the monthly close.

@@ -29,6 +29,7 @@ jobs:
           cache-dependency-path: |
             historical-real-oil-price/package-lock.json
             rally-oil-price/package-lock.json
+            ROC(12)/package-lock.json
 
       - name: Install dependencies
         working-directory: ./historical-real-oil-price
@@ -38,12 +39,20 @@ jobs:
         working-directory: ./rally-oil-price
         run: npm install
 
+      - name: Install dependencies (roc-12)
+        working-directory: ./ROC(12)
+        run: npm ci
+
       - name: Build data
         working-directory: ./historical-real-oil-price
         run: npm run build:data
 
       - name: Build data (g2)
         working-directory: ./rally-oil-price
+        run: npm run build:data
+
+      - name: Build data (g3)
+        working-directory: ./ROC(12)
         run: npm run build:data
 
       - name: Build app
@@ -54,13 +63,18 @@ jobs:
         working-directory: ./rally-oil-price
         run: npm run build
 
+      - name: Build app (g3)
+        working-directory: ./ROC(12)
+        run: npm run build
+
       - name: Assemble site
         run: |
           rm -rf site
-          mkdir -p site/historical-real-oil-price site/rally-oil-price
+          mkdir -p site/historical-real-oil-price site/rally-oil-price site/ROC\(12\)
           cp index.html site/index.html
           cp -R historical-real-oil-price/dist/. site/historical-real-oil-price/
           cp -R rally-oil-price/dist/. site/rally-oil-price/
+          cp -R ROC\(12\)/dist/. site/ROC\(12\)/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
