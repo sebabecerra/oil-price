@@ -12,7 +12,7 @@ body { margin: 0; background: #000000; }
 .panel-head { margin-bottom: 10px; }
 .panel-controls { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .dashboard-title { margin: 0; color: #f2f2f2; font-size: 30px; line-height: 1; letter-spacing: -0.03em; }
-.dashboard-title-accent { color: #ffd166; margin-bottom: 6px; }
+.dashboard-title-accent { color: #ffd166; margin-bottom: 0; }
 .dashboard-subtitle { margin: 6px 0 0; max-width: 920px; color: rgba(220,220,220,0.62); font-size: 12px; line-height: 1.45; }
 .lang-switch { display: flex; gap: 8px; }
 .lang-btn { border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.04); color: #d1d5db; border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -26,7 +26,7 @@ body { margin: 0; background: #000000; }
 .axis-label { fill: rgba(242,242,242,0.9); font-size: 17px; font-weight: 600; }
 .x-axis-year { fill: rgba(242,242,242,0.9); font-size: 17px; font-weight: 600; }
 .event-label { fill: #385dff; font-size: 14px; font-weight: 700; }
-.event-highlight { fill: rgba(255, 255, 255, 0.94); font-size: 24px; font-weight: 900; letter-spacing: 0.01em; }
+.event-highlight { fill: #385dff; font-size: 14px; font-weight: 700; letter-spacing: 0; }
 .tooltip-title { fill: #f2f2f2; font-size: 14px; font-weight: 700; }
 .tooltip-body { fill: rgba(244,247,251,0.92); font-size: 12px; }
 .play-btn { width: 42px; height: 42px; border: 1px solid rgba(255,209,102,0.35); border-radius: 999px; background: rgba(255,209,102,0.08); color: #ffd166; font: inherit; font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer; }
@@ -34,6 +34,11 @@ body { margin: 0; background: #000000; }
 .footer-note { margin: 0; margin-top: 4px; }
 .footer-source { margin: 4px 0 12px; }
 .footer-note span, .footer-source span { font-style: italic; font-weight: 700; }
+.footer-note sub {
+  font-size: 0.7em;
+  vertical-align: sub;
+  line-height: 0;
+}
 .corner-actions { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 22px; }
 @media (max-width: 960px) {
   .page { width: min(100vw, calc(100vw - 16px)); margin: 8px auto 14px; }

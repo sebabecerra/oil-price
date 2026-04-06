@@ -24,7 +24,7 @@ const events = [
   { label: "DOT COM", date: "2000-03-01" },
   { label: "Financial Crisis", date: "2008-10-01" },
   { label: "2022 Bear Market\nInflation / War / Rates", date: "2022-06-01" },
-  { label: "2026", date: "2026-01-01", variant: "highlight" },
+  { label: "Rally\n2026", date: "2026-01-01", variant: "highlight" },
 ];
 
 function parseCsv(text) {

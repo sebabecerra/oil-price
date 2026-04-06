@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 const UI = {
   en: {
-    heading: "WTI Spot and ROC(12)",
-    subtitle: "Monthly WTI spot candles with a 12-month rate-of-change panel.",
+    heading: "WTI: Prices and Momentum at Historically Elevated Levels",
+    subtitle: "Monthly WTI prices. Bottom panel: 12-month rate of change (ROC, %).",
     downloadCsv: "Download CSV",
     downloadPng: "Download PNG",
     reloadLabel: "Reload",
     noteLabel: "Note:",
-    noteText: "Top panel shows monthly WTI candles built from daily FRED observations through March 2026, plus a provisional April 2026 snapshot to capture the current move. Bottom panel shows ROC(12), the year-over-year rate of change in the monthly close.",
+    topNoteText: "Top panel shows monthly WTI prices: green when the closing price is above the opening price, and red when it is below. Each monthly bar uses the first observed price of the month as the opening price and the last observed price as the closing price. For April 2026, the chart uses a provisional month-to-date snapshot to capture the current move.",
+    bottomNoteText: "Bottom panel shows ROC =",
     sourceLabel: "Source:",
     sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
     homeLabel: "Open Macro Plots",
@@ -16,15 +17,16 @@ const UI = {
     rallyLabel: "Rally 2026",
   },
   es: {
-    heading: "WTI Spot y ROC(12)",
-    subtitle: "Velas mensuales del WTI spot con panel inferior de tasa de cambio a 12 meses.",
+    heading: "WTI: precios y momentum en niveles históricamente elevados",
+    subtitle: "Precios mensuales del WTI. Panel inferior: tasa de variación a 12 meses (ROC, %).",
     downloadCsv: "Descargar CSV",
     downloadPng: "Descargar PNG",
     reloadLabel: "Recargar",
     noteLabel: "Nota:",
-    noteText: "El panel superior muestra velas mensuales del WTI construidas con observaciones diarias de FRED hasta marzo de 2026, más una extensión provisional para abril de 2026 para capturar el movimiento actual. El panel inferior muestra ROC(12), la tasa de cambio interanual del cierre mensual.",
+    topNoteText: "El panel superior muestra precios mensuales del WTI: en verde cuando el precio de cierre es mayor que el de apertura y en rojo cuando es menor. Cada barra mensual usa como precio de apertura el primer precio observado del mes y como precio de cierre el ultimo. Para abril de 2026, el grafico usa un snapshot provisional del mes en curso para capturar el movimiento actual.",
+    bottomNoteText: "El panel inferior muestra ROC =",
     sourceLabel: "Fuente:",
-    sourceText: "FRED DCOILWTICO; April 2026 extension from the current market snapshot used in the reference chart.",
+    sourceText: "FRED DCOILWTICO; extensión a abril de 2026 a partir del snapshot de mercado actual usado en el gráfico de referencia.",
     homeLabel: "Abrir Macro Plots",
     historicalLabel: "Historia del precio del petróleo",
     rallyLabel: "Rally 2026",
@@ -33,7 +35,7 @@ const UI = {
 
 const WIDTH = 1380;
 const HEIGHT = 760;
-const PRICE_PANEL_TOP = 72;
+const PRICE_PANEL_TOP = 8;
 const PRICE_PANEL_HEIGHT = 470;
 const ROC_PANEL_TOP = 570;
 const ROC_PANEL_HEIGHT = 140;
@@ -42,7 +44,7 @@ const RIGHT = 46;
 const INNER_WIDTH = WIDTH - LEFT - RIGHT;
 const DOMAIN_END = "2029-01-01";
 const EVENT_LAYOUTS = {
-  "1987 Crash": { labelDx: -28, anchor: "end", searchStart: "1986-01-01", searchEnd: "1988-12-01" },
+  "1987 Crash": { labelDx: -4, anchor: "end", searchStart: "1986-01-01", searchEnd: "1988-12-01" },
   "1990 Crash": { labelDx: -8, anchor: "end", searchStart: "1989-06-01", searchEnd: "1991-06-01" },
   "DOT COM": { labelDx: 0, anchor: "middle", searchStart: "1999-01-01", searchEnd: "2001-03-01" },
   "Financial Crisis": { labelDx: 0, anchor: "middle", searchStart: "2007-06-01", searchEnd: "2009-06-01" },
@@ -131,6 +133,20 @@ function linePath(points) {
   return points.map(([x, y], index) => `${index === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
 }
 
+function InlineFormula() {
+  return (
+    <>
+      <span> (p</span>
+      <sub>t</sub>
+      <span> - p</span>
+      <sub>t-12</sub>
+      <span>) / p</span>
+      <sub>t-12</sub>
+      <span> * 100, donde p es el precio de cierre del dia.</span>
+    </>
+  );
+}
+
 export default function App() {
   const [data, setData] = useState(null);
   const [lang, setLang] = useState("es");
@@ -138,6 +154,7 @@ export default function App() {
   const [hover, setHover] = useState(null);
   const [chartKey, setChartKey] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [highlightReady, setHighlightReady] = useState(false);
   const svgRef = useRef(null);
   const baseUrl = import.meta.env.BASE_URL;
   const historicalUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
@@ -172,9 +189,16 @@ export default function App() {
     };
 
     setProgress(0);
+    setHighlightReady(false);
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [data, chartKey]);
+
+  useEffect(() => {
+    if (progress < 1) return undefined;
+    const timeout = window.setTimeout(() => setHighlightReady(true), 450);
+    return () => window.clearTimeout(timeout);
+  }, [progress]);
 
   const ui = UI[lang];
 
@@ -295,25 +319,48 @@ export default function App() {
               return <rect key={`roc-${d.date}`} x={x - 3} y={ROC_PANEL_TOP} width={6} height={ROC_PANEL_HEIGHT} fill="transparent" onMouseMove={() => setHover({ type: "roc", candle: d, x, y })} onMouseLeave={() => setHover(null)} />;
             })}
 
-            {data.events.map((event) => {
-              if (event.variant !== "highlight" && progress < 0.92) return null;
+            {highlightReady ? data.events.filter((event) => event.variant === "highlight").map((event) => {
+              const boxX = chart.xForDate(event.date);
+              const boxWidth = WIDTH - RIGHT - boxX;
+              const highlightLines = event.label.split("\n");
+              const latestVisibleCandle = visibleCandles.at(-1);
+              const latestHighlightX = latestVisibleCandle ? chart.xForDate(latestVisibleCandle.date) : null;
+              const latestHighlightY = latestVisibleCandle ? yScale(latestVisibleCandle.roc12 ?? 0, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT) : null;
+              const textX = boxX + 24;
+              const textY = ROC_PANEL_TOP + 16;
+              const textLineHeight = 18;
+              const arrowStartX = textX - 6;
+              const arrowStartY = textY + textLineHeight - 6;
+              const arrowEndX = latestHighlightX != null ? latestHighlightX : null;
+              const arrowEndY = latestHighlightY != null ? latestHighlightY - 10 : null;
+              return (
+                <g key={event.label} pointerEvents="none">
+                  <rect x={boxX} y={ROC_PANEL_TOP - 4} width={boxWidth} height={ROC_PANEL_HEIGHT - 10} fill="rgba(255,96,80,0.16)" />
+                  <text x={textX} y={textY} className="event-highlight">
+                    {highlightLines.map((line, index) => (
+                      <tspan key={`${event.label}-${index}`} x={textX} dy={index === 0 ? 0 : textLineHeight}>{line}</tspan>
+                    ))}
+                  </text>
+                  {arrowEndX != null && arrowEndY != null ? (
+                    <>
+                      <path d={`M ${arrowStartX} ${arrowStartY} L ${arrowEndX} ${arrowEndY}`} stroke="#3a66ff" strokeWidth="3.6" />
+                      <path d={`M ${arrowEndX - 6} ${arrowEndY - 6} L ${arrowEndX + 6} ${arrowEndY - 6} L ${arrowEndX} ${arrowEndY + 4} Z`} fill="#3a66ff" />
+                    </>
+                  ) : null}
+                </g>
+              );
+            }) : null}
+
+            <path d={linePath(rocPoints)} fill="none" stroke="#ffd166" strokeWidth="2.2" />
+
+            {data.events.filter((event) => event.variant !== "highlight").map((event) => {
+              if (progress < 0.92) return null;
               const anchorDate = eventAnchors[event.label] ?? event.date;
               const idx = chart.candles.findIndex((row) => row.date === anchorDate);
               if (idx < 0) return null;
               const x = chart.xForDate(anchorDate);
               const y = yScale(chart.candles[idx].roc12 ?? 0, chart.rocMin, chart.rocMax, ROC_PANEL_TOP, ROC_PANEL_HEIGHT);
               const layout = EVENT_LAYOUTS[event.label] ?? { labelDx: 0, anchor: "middle" };
-              if (event.variant === "highlight") {
-                const boxX = chart.xForDate(event.date);
-                const boxWidth = WIDTH - RIGHT - boxX;
-                return (
-                  <g key={event.label}>
-                    <rect x={boxX} y={ROC_PANEL_TOP - 4} width={boxWidth} height={ROC_PANEL_HEIGHT - 10} fill="rgba(255,96,80,0.28)" stroke="rgba(255,96,80,0.55)" />
-                    <text x={boxX + 18} y={ROC_PANEL_TOP + 28} className="event-highlight">{event.label}</text>
-                    {progress >= 0.92 && late2022Marker ? (() => { const markerX = chart.xForDate(late2022Marker.date); return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />; })() : null}
-                  </g>
-                );
-              }
               const lines = event.label.split("\n");
               const labelX = x + layout.labelDx;
               const arrowX = x + (layout.arrowDx ?? 0);
@@ -344,8 +391,10 @@ export default function App() {
                 </g>
               );
             })}
-
-            <path d={linePath(rocPoints)} fill="none" stroke="#ffd166" strokeWidth="2.2" />
+            {highlightReady && late2022Marker ? (() => {
+              const markerX = chart.xForDate(late2022Marker.date);
+              return <path d={`M ${markerX - 6} ${ROC_PANEL_TOP + 18} L ${markerX + 6} ${ROC_PANEL_TOP + 18} L ${markerX} ${ROC_PANEL_TOP + 30} Z`} fill="#3a66ff" />;
+            })() : null}
 
             {tickYears.map((entry) => {
               const x = chart.xForDate(entry.date);
@@ -367,7 +416,11 @@ export default function App() {
               </g>
             ) : null}
           </svg>
-          <p className="footer-note"><span>{ui.noteLabel}</span> {ui.noteText}</p>
+          <p className="footer-note">
+            <span>{ui.noteLabel}</span> {ui.topNoteText}
+            {" "}{ui.bottomNoteText}
+            <InlineFormula />
+          </p>
           <p className="footer-source"><span>{ui.sourceLabel}</span> {ui.sourceText}</p>
           <div className="corner-actions">
             <button
