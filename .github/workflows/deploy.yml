@@ -30,6 +30,8 @@ jobs:
             historical-real-oil-price/package-lock.json
             rally-oil-price/package-lock.json
             ROC(12)/package-lock.json
+            exports/package-lock.json
+            chokepoints/package-lock.json
 
       - name: Install dependencies
         working-directory: ./historical-real-oil-price
@@ -41,6 +43,14 @@ jobs:
 
       - name: Install dependencies (roc-12)
         working-directory: ./ROC(12)
+        run: npm ci
+
+      - name: Install dependencies (exports)
+        working-directory: ./exports
+        run: npm ci
+
+      - name: Install dependencies (chokepoints)
+        working-directory: ./chokepoints
         run: npm ci
 
       - name: Build data
@@ -67,14 +77,24 @@ jobs:
         working-directory: ./ROC(12)
         run: npm run build
 
+      - name: Build app (exports)
+        working-directory: ./exports
+        run: npm run build
+
+      - name: Build app (chokepoints)
+        working-directory: ./chokepoints
+        run: npm run build
+
       - name: Assemble site
         run: |
           rm -rf site
-          mkdir -p site/historical-real-oil-price site/rally-oil-price site/ROC\(12\)
+          mkdir -p site/historical-real-oil-price site/rally-oil-price site/ROC\(12\) site/exports site/chokepoints
           cp index.html site/index.html
           cp -R historical-real-oil-price/dist/. site/historical-real-oil-price/
           cp -R rally-oil-price/dist/. site/rally-oil-price/
           cp -R ROC\(12\)/dist/. site/ROC\(12\)/
+          cp -R exports/dist/. site/exports/
+          cp -R chokepoints/dist/. site/chokepoints/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -7,6 +7,8 @@ Structure:
 - `historical-real-oil-price/`: historical real oil price chart
 - `rally-oil-price/`: one-line-per-year Brent chart
 - `ROC(12)/`: monthly WTI candles with a 12-month rate-of-change panel
+- `exports/`: Hormuz origin/destination oil-flow diagram
+- `chokepoints/`: multi-chokepoint oil-flow diagram with EIA figure data
 
 The repository root stays reserved for shared repo-level files such as the GitHub Pages workflow, the root index page, git config and future graph folders.
 
@@ -14,7 +16,7 @@ The repository root stays reserved for shared repo-level files such as the GitHu
 
 Run these from the graph folder you want:
 
-- `cd historical-real-oil-price`, `cd rally-oil-price`, or `cd ROC(12)`
+- `cd historical-real-oil-price`, `cd rally-oil-price`, `cd ROC(12)`, `cd exports`, or `cd chokepoints`
 - `npm install`
 - `npm run build:data`
 - `npm run dev`
