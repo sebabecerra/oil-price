@@ -18,7 +18,7 @@ const UI = {
     destinationLabel: 'Destinations',
     selectLabel: 'Chokepoint',
     transitLabel: 'transit',
-    totalLabel: 'Total / Ranking',
+    totalLabel: 'Total',
     totalCenterLabel: 'World oil flow',
   },
   es: {
@@ -38,13 +38,13 @@ const UI = {
     destinationLabel: 'Destinos',
     selectLabel: 'Paso',
     transitLabel: 'transito',
-    totalLabel: 'Total / Ranking',
+    totalLabel: 'Total',
     totalCenterLabel: 'Flujo del petroleo mundial',
   },
 };
 
 const TOTAL_CHOKEPOINT = {
-  label: { en: 'Total / Ranking', es: 'Total / Ranking' },
+  label: { en: 'Total', es: 'Total' },
   value: 73.2,
   isTotal: true,
   origin: [

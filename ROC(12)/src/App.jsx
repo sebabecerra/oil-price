@@ -19,6 +19,7 @@ const UI = {
     homeLabel: "Open Macro Plots",
     historicalLabel: "Historical Oil Prices",
     rallyLabel: "Rally 2026",
+    flowsLabel: "Oil flows",
   },
   es: {
     heading: "WTI: precios y momentum en niveles históricamente elevados",
@@ -38,6 +39,7 @@ const UI = {
     homeLabel: "Abrir Macro Plots",
     historicalLabel: "Historia del precio del petróleo",
     rallyLabel: "Rally 2026",
+    flowsLabel: "Flujos de petroleo",
   },
 };
 
@@ -262,6 +264,9 @@ export default function App() {
   const rallyUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:5175/"
     : (baseUrl.endsWith("/ROC(12)/") ? baseUrl.replace(/\/ROC\(12\)\/$/, "/rally-oil-price/") : "/rally-oil-price/");
+  const flowsUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:4285/oil-price/chokepoints/"
+    : (baseUrl.endsWith("/ROC(12)/") ? baseUrl.replace(/\/ROC\(12\)\/$/, "/chokepoints/") : "/chokepoints/");
   const macroPlotsUrl = "https://sebabecerra.github.io/macro-plots/";
 
   useEffect(() => {
@@ -368,6 +373,7 @@ export default function App() {
             <a className="lang-btn link-btn" href={macroPlotsUrl} target="_blank" rel="noreferrer">{ui.homeLabel}</a>
             <a className="lang-btn link-btn" href={historicalUrl}>{ui.historicalLabel}</a>
             <a className="lang-btn link-btn" href={rallyUrl}>{ui.rallyLabel}</a>
+            <a className="lang-btn link-btn" href={flowsUrl}>{ui.flowsLabel}</a>
             <img src={`${baseUrl}logo_clean.png`} alt="SB" className="brand-logo" />
           </div>
         </div>

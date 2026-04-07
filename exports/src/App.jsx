@@ -171,7 +171,7 @@ export default function App() {
     ? 'http://127.0.0.1:4223/'
     : '/oil-price/ROC(12)/';
   const chokepointsUrl = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
-    ? 'http://127.0.0.1:4278/oil-price/chokepoints/'
+    ? 'http://127.0.0.1:4285/oil-price/chokepoints/'
     : '/oil-price/chokepoints/';
   const macroPlotsUrl = 'https://sebabecerra.github.io/macro-plots/';
 

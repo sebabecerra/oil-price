@@ -23,7 +23,7 @@ const UI_TEXT = {
     macroPlotsLabel: 'Open Macro Plots',
     rallyLabel: 'Rally 2026',
     momentumLabel: 'Momentum',
-    momentumLabel: 'Momentum',
+    flowsLabel: 'Oil flows',
     chartTitle: 'Crude oil prices, $2014/bbl',
     chartSubtitle: '2026 is year-to-date data.',
   },
@@ -38,6 +38,7 @@ const UI_TEXT = {
     macroPlotsLabel: 'Abrir Macro Plots',
     rallyLabel: 'Rally 2026',
     momentumLabel: 'Momentum',
+    flowsLabel: 'Flujos de petroleo',
     chartTitle: 'Precio del petroleo, $2014/bbl',
     chartSubtitle: '2026 corresponde a datos acumulados del año.',
   },
@@ -603,6 +604,9 @@ export default function App() {
   const momentumUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:4223/"
     : (baseUrl.endsWith("/historical-real-oil-price/") ? baseUrl.replace(/\/historical-real-oil-price\/$/, "/ROC(12)/") : "/ROC(12)/");
+  const flowsUrl = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+    ? "http://127.0.0.1:4285/oil-price/chokepoints/"
+    : (baseUrl.endsWith("/historical-real-oil-price/") ? baseUrl.replace(/\/historical-real-oil-price\/$/, "/chokepoints/") : "/chokepoints/");
 
   useEffect(() => {
     fetch(dataUrl)
@@ -732,6 +736,12 @@ export default function App() {
               href={momentumUrl}
             >
               {ui.momentumLabel}
+            </a>
+            <a
+              className="lang-btn link-btn"
+              href={flowsUrl}
+            >
+              {ui.flowsLabel}
             </a>
             <img src={`${import.meta.env.BASE_URL}logo_clean.png`} alt="SB" className="brand-logo" />
           </div>
